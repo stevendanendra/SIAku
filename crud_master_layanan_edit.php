@@ -74,10 +74,13 @@ $akun_pendapatan_query = $conn->query("SELECT id_akun, nama_akun FROM ms_akun WH
 <div class="container mt-5">
     
     <h1 class="mb-4">Ubah Data Master Layanan Jasa</h1>
-    <div class="d-flex gap-3 mb-4 p-2 bg-light rounded shadow-sm">
-        <a href="crud_master_akun.php" class="btn btn-outline-primary btn-sm">📊 Master Akun (COA)</a>
-        <a href="crud_master_layanan.php" class="btn btn-primary btn-sm active">🧼 Master Layanan Jasa</a>
-        <a href="crud_master_pengguna.php" class="btn btn-outline-primary btn-sm">👤 Master Pengguna & Karyawan</a>
+    
+    <!-- FIX UI: Navbar Navigasi Master Data yang Lebih Bersih -->
+    <div class="d-flex gap-3 mb-4 border-bottom pb-3"> 
+        <a href="crud_master_akun.php" class="btn btn-outline-dark btn-sm">📊 Master Akun (COA)</a>
+        <a href="crud_master_layanan.php" class="btn btn-dark btn-sm active">🧼 Master Layanan Jasa</a>
+        <a href="crud_master_pengguna.php" class="btn btn-outline-dark btn-sm">👤 Master Pengguna & Karyawan</a>
+        <a href="payroll_komponen.php" class="btn btn-outline-dark btn-sm">💵 Pengaturan Payroll</a>
     </div>
 
     <p><a href="crud_master_layanan.php" class="btn btn-sm btn-outline-secondary">← Kembali ke Daftar Layanan</a></p>
@@ -86,7 +89,7 @@ $akun_pendapatan_query = $conn->query("SELECT id_akun, nama_akun FROM ms_akun WH
     <div class="row">
         <div class="col-md-6">
             <div class="card shadow-sm p-4">
-                <h3 class="card-title mb-3">Detail Layanan: <?php echo htmlspecialchars($data['nama_layanan']); ?></h3>
+                <h3 class="card-title mb-3">Edit Layanan: **<?php echo htmlspecialchars($data['nama_layanan']); ?>**</h3>
                 
                 <?php if ($error_message) echo "<div class='alert alert-danger'>$error_message</div>"; ?>
                 <?php if ($success_message) echo "<div class='alert alert-success'>$success_message</div>"; ?>
@@ -117,19 +120,21 @@ $akun_pendapatan_query = $conn->query("SELECT id_akun, nama_akun FROM ms_akun WH
                         <input type="text" class="form-control" name="nama_layanan" value="<?php echo htmlspecialchars($data['nama_layanan']); ?>" required>
                     </div>
                     
-                    <div class="mb-3">
-                        <label for="luas_min" class="form-label">Luas Min (m²):</label>
-                        <input type="number" class="form-control" name="luas_min" value="<?php echo $data['luas_min']; ?>" min="0">
+                    <div class="row g-2 mb-3">
+                        <div class="col-sm-6">
+                            <label for="luas_min" class="form-label">Luas Min (m²):</label>
+                            <input type="number" class="form-control text-end" name="luas_min" value="<?php echo $data['luas_min']; ?>" min="0">
+                        </div>
+                        <div class="col-sm-6">
+                            <label for="luas_max" class="form-label">Luas Max (m²):</label>
+                            <input type="number" class="form-control text-end" name="luas_max" value="<?php echo $data['luas_max']; ?>" min="0">
+                        </div>
                     </div>
                     
                     <div class="mb-3">
-                        <label for="luas_max" class="form-label">Luas Max (m²):</label>
-                        <input type="number" class="form-control" name="luas_max" value="<?php echo $data['luas_max']; ?>" min="0">
-                    </div>
-                    
-                    <div class="mb-3">
-                        <label for="harga_jual" class="form-label">Harga Jual (BIGINT):</label>
-                        <input type="number" class="form-control" name="harga_jual" value="<?php echo $data['harga_jual']; ?>" required>
+                        <label for="harga_jual" class="form-label">Harga Jual (Rp):</label>
+                        <!-- FIX UI: Ratakan ke kanan -->
+                        <input type="number" class="form-control text-end" name="harga_jual" value="<?php echo $data['harga_jual']; ?>" required>
                     </div>
                     
                     <div class="mb-3">
@@ -146,6 +151,7 @@ $akun_pendapatan_query = $conn->query("SELECT id_akun, nama_akun FROM ms_akun WH
                     </div>
                     
                     <div class="mb-3 form-check">
+                        <!-- FIX LOGIC: Memastikan checkbox menampilkan status aktif saat ini -->
                         <input type="checkbox" class="form-check-input" id="is_aktif" name="is_aktif" value="1" <?php echo $data['is_aktif'] ? 'checked' : ''; ?>>
                         <label class="form-check-label" for="is_aktif">Status Aktif (Centang untuk Aktif)</label>
                     </div>
@@ -158,13 +164,7 @@ $akun_pendapatan_query = $conn->query("SELECT id_akun, nama_akun FROM ms_akun WH
 </div>
 
 <script>
-    // Ambil data dari PHP
-    const role = '<?php echo $role_login; ?>';
-    const nama = '<?php echo $nama_login; ?>';
-    const id = '<?php echo $id_login; ?>';
-    
-    // Update footer info
-    document.getElementById('access-info').innerHTML = `Akses: **${role}** (${nama}, ID ${id})`;
+    document.getElementById('access-info').innerHTML = 'Akses: <?php echo $role_login; ?> (<?php echo $nama_login; ?>, ID <?php echo $id_login; ?>)';
 </script>
 
 <?php include '_footer.php'; // Footer Bootstrap ?>

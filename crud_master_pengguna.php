@@ -26,7 +26,6 @@ if (isset($_SESSION['success_message'])) {
     $success_message .= (empty($success_message) ? '' : '<br>') . $_SESSION['success_message'];
     unset($_SESSION['success_message']);
 }
-// Tambahkan pengecekan pesan sukses dari edit
 if (isset($_SESSION['success_message_edit'])) {
     $success_message .= (empty($success_message) ? '' : '<br>') . $_SESSION['success_message_edit'];
     unset($_SESSION['success_message_edit']);
@@ -47,8 +46,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action']) && $_POST['a
     if (empty($username) || empty($email) || empty($password) || empty($role)) {
         $error_message = "Field utama wajib diisi.";
     } else {
-        $sql = "INSERT INTO ms_pengguna (username, email, password, nama_lengkap, role, is_menikah, jumlah_anak, is_aktif) 
-                VALUES ('$username', '$email', '$password', '$nama_lengkap', '$role', '$is_menikah', '$jumlah_anak', '$is_aktif')";
+        $sql = "INSERT INTO ms_pengguna (username, email, password, nama_lengkap, role, is_menikah, jumlah_anak, is_aktif, tgl_daftar) 
+                VALUES ('$username', '$email', '$password', '$nama_lengkap', '$role', '$is_menikah', '$jumlah_anak', '$is_aktif', CURDATE())";
         
         if ($conn->query($sql) === TRUE) {
             $success_message = "Pengguna '$username' berhasil ditambahkan.";
@@ -59,7 +58,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action']) && $_POST['a
 }
 
 // --- LOGIKA TAMPIL DATA (READ) ---
-$pengguna_query = $conn->query("SELECT * FROM ms_pengguna ORDER BY id_pengguna ASC");
+$pengguna_query = $conn->query("SELECT id_pengguna, username, email, password, nama_lengkap, role, is_menikah, jumlah_anak, is_aktif, tgl_daftar FROM ms_pengguna ORDER BY id_pengguna ASC");
 ?>
 
 <?php include '_header.php'; // Header Bootstrap ?>
@@ -67,10 +66,12 @@ $pengguna_query = $conn->query("SELECT * FROM ms_pengguna ORDER BY id_pengguna A
     
     <h1 class="mb-4">Kelola Master Data Perusahaan</h1>
     
-    <div class="d-flex gap-3 mb-4 p-2 bg-light rounded shadow-sm">
-        <a href="crud_master_akun.php" class="btn btn-outline-primary btn-sm">📊 Master Akun (COA)</a>
-        <a href="crud_master_layanan.php" class="btn btn-outline-primary btn-sm">🧼 Master Layanan Jasa</a>
-        <a href="crud_master_pengguna.php" class="btn btn-primary btn-sm active">👤 Master Pengguna & Karyawan</a>
+    <div class="d-flex gap-3 mb-4 border-bottom pb-3"> 
+        <a href="crud_master_akun.php" class="btn btn-outline-dark btn-sm">📊 Master Akun (COA)</a>
+        <a href="crud_master_layanan.php" class="btn btn-outline-dark btn-sm">🧼 Master Layanan Jasa</a>
+        <a href="crud_master_pengguna.php" class="btn btn-dark btn-sm active">👤 Master Pengguna & Karyawan</a>
+        <a href="crud_master_pelanggan.php" class="btn btn-outline-dark btn-sm">👥 Master Pelanggan</a>
+        <a href="payroll_komponen.php" class="btn btn-outline-dark btn-sm">💵 Pengaturan Payroll</a>
     </div>
 
     <p><a href="dashboard_owner.php" class="btn btn-sm btn-outline-secondary">← Kembali ke Dashboard Owner</a></p>
@@ -83,8 +84,8 @@ $pengguna_query = $conn->query("SELECT * FROM ms_pengguna ORDER BY id_pengguna A
 
     <div class="row">
         <div class="col-md-4">
-            <div class="card shadow-sm p-3">
-                <h3 class="card-title">Tambah Pengguna Baru</h3>
+            <div class="card shadow-sm p-4 mb-4">
+                <h3 class="card-title h5">Tambah Pengguna Baru</h3>
                 <form method="POST">
                     <input type="hidden" name="action" value="add">
                     
@@ -114,9 +115,10 @@ $pengguna_query = $conn->query("SELECT * FROM ms_pengguna ORDER BY id_pengguna A
                             <option value="Owner">Owner</option>
                             <option value="Karyawan">Karyawan (Kasir)</option>
                             <option value="Cleaner">Cleaner (Penerima Gaji)</option>
+                            <option value="Admin">Admin</option> 
                         </select>
                     </div>
-
+                    
                     <div class="mb-3 form-check">
                         <input type="checkbox" class="form-check-input" id="is_menikah" name="is_menikah" value="1">
                         <label class="form-check-label" for="is_menikah">Status Menikah</label>
@@ -138,31 +140,48 @@ $pengguna_query = $conn->query("SELECT * FROM ms_pengguna ORDER BY id_pengguna A
         </div>
 
         <div class="col-md-8">
-            <h3 class="mb-3">Daftar Pengguna Aktif</h3>
+            <h3 class="mb-3 h5">Daftar Pengguna Aktif</h3>
             <div class="table-responsive">
-                <table class="table table-bordered table-striped table-sm">
+                <table class="table table-bordered table-sm align-middle" style="min-width: 1000px;">
                     <thead class="table-dark">
                         <tr>
-                            <th>ID</th>
-                            <th>Username</th>
-                            <th>Role</th>
-                            <th>Menikah</th>
-                            <th>Anak</th>
-                            <th>Aktif</th> 
-                            <th>Aksi</th>
+                            <th style="width: 5%;">ID</th>
+                            <th style="width: 10%;">Username</th>
+                            <th style="width: 15%;">Nama Lengkap</th> 
+                            <th style="width: 20%;">Email</th>         
+                            <th style="width: 10%;">Role</th>
+                            <th style="width: 8%;">Menikah</th>
+                            <th style="width: 8%;">Anak</th>
+                            <th style="width: 10%;">Tgl. Daftar</th> 
+                            <th style="width: 8%;">Aktif</th> 
+                            <th style="width: 15%;">Aksi</th>
                         </tr>
                     </thead>
                     <tbody>
-                        <?php while ($row = $pengguna_query->fetch_assoc()): ?>
+                        <?php while ($row = $pengguna_query->fetch_assoc()): 
+                            $status_class = $row['is_aktif'] ? 'badge bg-success' : 'badge bg-danger';
+                        ?>
                         <tr>
                             <td><?php echo $row['id_pengguna']; ?></td>
                             <td><?php echo htmlspecialchars($row['username']); ?></td>
+                            <td><?php echo htmlspecialchars($row['nama_lengkap']); ?></td> 
+                            <td><?php echo htmlspecialchars($row['email']); ?></td>       
                             <td><?php echo $row['role']; ?></td>
                             <td><?php echo $row['is_menikah'] ? 'Ya' : 'Tidak'; ?></td>
                             <td><?php echo $row['jumlah_anak']; ?></td>
+                            <td><?php echo $row['tgl_daftar']; ?></td>                     
                             <td><?php echo $row['is_aktif'] ? '<span class="badge bg-success">AKTIF</span>' : '<span class="badge bg-danger">NON-AKTIF</span>'; ?></td> 
                             <td>
-                                <a href="crud_master_pengguna_edit.php?id=<?php echo $row['id_pengguna']; ?>" class="btn btn-sm btn-info text-white">Ubah / Status</a>
+                                <div class="d-flex gap-1">
+                                    <a href="crud_master_pengguna_edit.php?id=<?php echo $row['id_pengguna']; ?>" class="btn btn-sm btn-info text-white">Ubah</a>
+                                    
+                                    <a href="#" 
+                                       class="btn btn-sm btn-danger" 
+                                       data-bs-toggle="modal" 
+                                       data-bs-target="#confirmDeletePenggunaModal" 
+                                       data-id="<?php echo $row['id_pengguna']; ?>" 
+                                       data-nama="<?php echo htmlspecialchars($row['username']); ?>">Hapus</a>
+                                </div>
                             </td>
                         </tr>
                         <?php endwhile; ?>
@@ -171,9 +190,53 @@ $pengguna_query = $conn->query("SELECT * FROM ms_pengguna ORDER BY id_pengguna A
             </div>
         </div>
     </div>
-    
-    <script>
-        document.getElementById('access-info').innerHTML = 'Akses: **<?php echo $role_login; ?>** (<?php echo $nama_login; ?>, ID <?php echo $id_login; ?>)';
-    </script>
+</div>
 
+<div class="modal fade" id="confirmDeletePenggunaModal" tabindex="-1" aria-labelledby="confirmDeletePenggunaModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header bg-danger text-white">
+        <h5 class="modal-title" id="confirmDeletePenggunaModalLabel">⚠️ Konfirmasi Penghapusan Pengguna</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <p>Anda yakin ingin menghapus Pengguna berikut? Tindakan ini tidak dapat dibatalkan!</p>
+        <p>
+            <strong>ID Pengguna:</strong> <span id="modal-delete-pengguna-id" class="fw-bold"></span><br>
+            <strong>Username:</strong> <span id="modal-delete-pengguna-nama" class="fst-italic"></span>
+        </p>
+        <div class="alert alert-warning small" role="alert">
+            **PERINGATAN KRITIS:** Penghapusan akan GAGAL jika pengguna ini memiliki riwayat transaksi gaji (`tr_gaji`) atau transaksi penjualan (`tr_penjualan`).
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+        <a href="#" id="delete-pengguna-link" class="btn btn-danger">Ya, Hapus Pengguna Permanen</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+    // Script JS untuk mengisi data ID dan Nama ke dalam Modal
+    const deletePenggunaModal = document.getElementById('confirmDeletePenggunaModal');
+    
+    deletePenggunaModal.addEventListener('show.bs.modal', function (event) {
+        const button = event.relatedTarget; 
+        const idPengguna = button.getAttribute('data-id');
+        const namaPengguna = button.getAttribute('data-nama');
+        
+        const modalIdSpan = deletePenggunaModal.querySelector('#modal-delete-pengguna-id');
+        const modalNamaSpan = deletePenggunaModal.querySelector('#modal-delete-pengguna-nama');
+        const deleteLink = deletePenggunaModal.querySelector('#delete-pengguna-link');
+        
+        modalIdSpan.textContent = idPengguna;
+        modalNamaSpan.textContent = namaPengguna;
+        
+        // Set link Hapus Permanen yang menunjuk ke crud_master_pengguna_delete.php
+        deleteLink.href = 'crud_master_pengguna_delete.php?id=' + idPengguna;
+    });
+    
+    document.getElementById('access-info').innerHTML = 'Akses: **<?php echo $role_login; ?>** (<?php echo $nama_login; ?>, ID <?php echo $id_login; ?>)';
+</script>
 <?php include '_footer.php'; // Footer Bootstrap ?>

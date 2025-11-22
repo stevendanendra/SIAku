@@ -14,7 +14,6 @@ $nama_login = htmlspecialchars($_SESSION['nama_lengkap'] ?? $_SESSION['username'
 $id_login = htmlspecialchars($_SESSION['id_pengguna'] ?? 'N/A');
 
 // --- LOGIKA AMBIL SALDO FINAL ---
-// Ambil semua akun Pendapatan (4xxx) dan Beban (5xxx)
 $laba_rugi_query = $conn->query("
     SELECT 
         id_akun, 
@@ -36,14 +35,9 @@ if ($laba_rugi_query) {
         $nilai_saldo = $row['saldo_saat_ini'];
         
         if ($row['tipe_akun'] == 'Pendapatan') {
-            // Saldo Pendapatan normalnya Kredit. Jika saldo_saat_ini positif, itu adalah nilai Kredit/Pendapatan.
-            // Jika ada nilai negatif, berarti itu mutasi Debit yang mengurangi pendapatan.
             $total_pendapatan += $nilai_saldo;
             $data_pendapatan[] = $row;
         } else {
-            // Saldo Beban normalnya Debit. Mutasi Beban dicatat sebagai nilai positif (Debit).
-            // Kita harus mengambil nilai absolutnya jika Saldo Normalnya Debit.
-            // Kita asumsikan saldo yang tersimpan di DB sudah mewakili total Debit (Beban).
             $total_beban += $nilai_saldo;
             $data_beban[] = $row;
         }
@@ -52,31 +46,33 @@ if ($laba_rugi_query) {
 
 // Hitung Laba Bersih
 $laba_bersih = $total_pendapatan - $total_beban;
+$laba_bersih_status = $laba_bersih >= 0 ? 'Laba Bersih' : 'Rugi Bersih';
 ?>
 
 <?php include '_header.php'; // Header Bootstrap ?>
 
 <div class="container mt-5">
 
-    <h1 class="mb-4">6. Laporan Laba Rugi Perusahaan</h1>
-    
-    <p class="text-muted">Akses: **<?php echo $role_login; ?>** (<?php echo $nama_login; ?>, ID <?php echo $id_login; ?>)</p> 
-    <p><a href="dashboard_owner.php" class="btn btn-sm btn-outline-secondary">← Kembali ke Dashboard Owner</a></p>
-    <hr>
+    <h1 class="mb-4 d-print-none">6. Laporan Laba Rugi Perusahaan</h1>
+    <p class="text-muted d-print-none">Akses: **<?php echo $role_login; ?>** (<?php echo $nama_login; ?>, ID <?php echo $id_login; ?>)</p> 
+    <p class="d-print-none"><a href="dashboard_owner.php" class="btn btn-sm btn-outline-secondary">← Kembali ke Dashboard Owner</a></p>
+    <hr class="d-print-none">
 
-    <div class="alert alert-warning mb-4">
+    <div class="alert alert-warning mb-4 d-print-none">
         ⚠️ Laporan ini akurat HANYA JIKA Anda sudah menekan tombol **Proses Buku Besar** terbaru di Modul 5.
     </div>
 
-    <div class="card shadow-sm p-4">
+    <div class="card shadow-sm p-4" id="print-area"> 
         <h2 class="text-center mb-4">Laporan Laba Rugi - ShinyHome</h2>
         
         <div class="table-responsive">
-            <table class="table table-striped table-sm">
-                <thead class="table-info">
+            <table class="table table-bordered table-sm" style="width: 100%;">
+                
+                <thead class="bg-primary text-white">
                     <tr>
-                        <th colspan="2">PENDAPATAN (REVENUE)</th>
-                        <th class="text-end">Jumlah (Rp)</th>
+                        <th style="width: 5%;"></th>
+                        <th>PENDAPATAN (REVENUE)</th>
+                        <th class="text-end" style="width: 25%;">Jumlah (Rp)</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -86,14 +82,14 @@ $laba_bersih = $total_pendapatan - $total_beban;
                         $grand_total_pendapatan += $p['saldo_saat_ini'];
                     ?>
                     <tr>
-                        <td style="width: 10px;"></td>
-                        <td><?php echo htmlspecialchars($p['nama_akun']); ?></td>
+                        <td style="width: 5%;"></td>
+                        <td class="fw-medium"><?php echo htmlspecialchars($p['nama_akun']); ?></td>
                         <td class="text-end"><?php echo number_format($p['saldo_saat_ini'], 0, ',', '.'); ?></td>
                     </tr>
                     <?php endforeach; ?>
                 </tbody>
                 <tfoot>
-                    <tr class="table-success">
+                    <tr class="bg-info-subtle">
                         <td colspan="2" class="fw-bold">TOTAL PENDAPATAN</td>
                         <td class="text-end fw-bold"><?php echo number_format($grand_total_pendapatan, 0, ',', '.'); ?></td>
                     </tr>
@@ -104,11 +100,13 @@ $laba_bersih = $total_pendapatan - $total_beban;
         <br>
         
         <div class="table-responsive">
-            <table class="table table-striped table-sm">
-                <thead class="table-danger">
+            <table class="table table-bordered table-sm" style="width: 100%;">
+                
+                <thead class="bg-danger text-white">
                     <tr>
-                        <th colspan="2">BEBAN (EXPENSES)</th>
-                        <th class="text-end">Jumlah (Rp)</th>
+                        <th style="width: 5%;"></th>
+                        <th>BEBAN (EXPENSES)</th>
+                        <th class="text-end" style="width: 25%;">Jumlah (Rp)</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -118,14 +116,14 @@ $laba_bersih = $total_pendapatan - $total_beban;
                         $grand_total_beban += $b['saldo_saat_ini'];
                     ?>
                     <tr>
-                        <td style="width: 10px;"></td>
-                        <td><?php echo htmlspecialchars($b['nama_akun']); ?></td>
+                        <td style="width: 5%;"></td>
+                        <td class="fw-medium"><?php echo htmlspecialchars($b['nama_akun']); ?></td>
                         <td class="text-end"><?php echo number_format($b['saldo_saat_ini'], 0, ',', '.'); ?></td>
                     </tr>
                     <?php endforeach; ?>
                 </tbody>
                 <tfoot>
-                    <tr class="table-danger">
+                    <tr class="bg-danger-subtle">
                         <td colspan="2" class="fw-bold">TOTAL BEBAN</td>
                         <td class="text-end fw-bold"><?php echo number_format($grand_total_beban, 0, ',', '.'); ?></td>
                     </tr>
@@ -135,19 +133,27 @@ $laba_bersih = $total_pendapatan - $total_beban;
         
         <br>
         
-        <div class="alert <?php echo $laba_bersih >= 0 ? 'alert-success' : 'alert-danger'; ?>">
-            <h4 class="mb-0 text-center">
-                LABA BERSIH PERUSAHAAN: 
-                <span class="float-end">Rp <?php echo number_format($laba_bersih, 0, ',', '.'); ?></span>
+        <div class="alert <?php echo $laba_bersih >= 0 ? 'alert-success' : 'alert-danger'; ?> fw-bold">
+            <h4 class="mb-0">
+                <?php echo strtoupper($laba_bersih_status); ?>: 
+                <span class="float-end">Rp <?php echo number_format(abs($laba_bersih), 0, ',', '.'); ?></span>
             </h4>
         </div>
         
-    </div>
+        <button onclick="window.print()" class="btn btn-outline-secondary btn-sm mt-3 d-print-none">
+             🖨️ Cetak Laporan / Simpan sebagai PDF
+        </button>
+        </div>
 
 </div>
 
 <script>
+    // Tambahkan style print untuk menyembunyikan elemen non-laporan
+    const style = document.createElement('style');
+    style.innerHTML = '@media print { .d-print-none { display: none !important; } #print-area { margin: 0; padding: 0; box-shadow: none; } }';
+    document.head.appendChild(style);
+    
     document.getElementById('access-info').innerHTML = 'Akses: <?php echo $role_login; ?> (<?php echo $nama_login; ?>, ID <?php echo $id_login; ?>)';
 </script>
 
-<?php include '_footer.php'; // Footer Bootstrap ?> 
+<?php include '_footer.php'; // Footer Bootstrap ?>

@@ -40,7 +40,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action']) && $_POST['a
             jumlah_anak = '$jumlah_anak',
             is_aktif = '$is_aktif' 
             ";
-            
+        
     // Tambahkan password jika ada input baru
     if (!empty($new_password)) {
         $sql .= ", password = '$new_password'";
@@ -51,7 +51,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action']) && $_POST['a
     
     if ($conn->query($sql) === TRUE) {
         // Setelah update data master, redirect dengan pesan sukses
-        $_SESSION['success_message'] = "Data pengguna #$id_pengguna berhasil diperbarui" . $success_message . ".";
+        $_SESSION['success_message_edit'] = "Data pengguna #$id_pengguna berhasil diperbarui" . $success_message . ".";
         header("Location: crud_master_pengguna.php"); 
         exit();
     } else {
@@ -74,10 +74,13 @@ $data = $result->fetch_assoc();
 <div class="container mt-5">
     
     <h1 class="mb-4">Ubah Data Master Pengguna & Karyawan</h1>
-    <div class="d-flex gap-3 mb-4 p-2 bg-light rounded shadow-sm">
-        <a href="crud_master_akun.php" class="btn btn-outline-primary btn-sm">📊 Master Akun (COA)</a>
-        <a href="crud_master_layanan.php" class="btn btn-outline-primary btn-sm">🧼 Master Layanan Jasa</a>
-        <a href="crud_master_pengguna.php" class="btn btn-primary btn-sm active">👤 Master Pengguna & Karyawan</a>
+    
+    <!-- FIX UI: Navbar Navigasi Master Data yang Lebih Bersih -->
+    <div class="d-flex gap-3 mb-4 border-bottom pb-3"> 
+        <a href="crud_master_akun.php" class="btn btn-outline-dark btn-sm">📊 Master Akun (COA)</a>
+        <a href="crud_master_layanan.php" class="btn btn-outline-dark btn-sm">🧼 Master Layanan Jasa</a>
+        <a href="crud_master_pengguna.php" class="btn btn-dark btn-sm active">👤 Master Pengguna & Karyawan</a>
+        <a href="payroll_komponen.php" class="btn btn-outline-dark btn-sm">💵 Pengaturan Payroll</a>
     </div>
 
     <p><a href="crud_master_pengguna.php" class="btn btn-sm btn-outline-secondary">← Kembali ke Daftar Pengguna</a></p>
@@ -86,7 +89,7 @@ $data = $result->fetch_assoc();
     <div class="row">
         <div class="col-md-6">
             <div class="card shadow-sm p-4">
-                <h3 class="card-title mb-3">Detail Pengguna: <?php echo htmlspecialchars($data['nama_lengkap']); ?></h3>
+                <h3 class="card-title mb-3">Edit Pengguna: **<?php echo htmlspecialchars($data['nama_lengkap']); ?>**</h3>
                 
                 <?php if ($error_message) echo "<div class='alert alert-danger'>$error_message</div>"; ?>
                 <?php if ($success_message) echo "<div class='alert alert-success'>$success_message</div>"; ?>
@@ -98,7 +101,8 @@ $data = $result->fetch_assoc();
                         <label class="form-label">ID Pengguna:</label>
                         <input type="text" class="form-control" value="<?php echo $id_pengguna; ?>" disabled>
                     </div>
-
+                    
+                    <!-- KELOMPOK AKUN DASAR -->
                     <div class="mb-3">
                         <label for="username" class="form-label">Username:</label>
                         <input type="text" class="form-control" name="username" value="<?php echo htmlspecialchars($data['username']); ?>" required>
@@ -123,14 +127,20 @@ $data = $result->fetch_assoc();
                         <label for="role" class="form-label">Role:</label>
                         <select class="form-select" name="role" required>
                             <?php 
-                            $role_options = ['Owner', 'Karyawan', 'Cleaner'];
+                            $role_options = ['Owner', 'Karyawan', 'Cleaner', 'Admin']; // FIX: Tambahkan Admin jika sudah ada di ENUM
                             foreach ($role_options as $role) {
                                 $selected = ($role == $data['role']) ? 'selected' : '';
-                                echo "<option value='$role' $selected>$role</option>";
+                                $display_name = ($role == 'Karyawan') ? 'Karyawan (Kasir)' : (($role == 'Cleaner') ? 'Cleaner (Penerima Gaji)' : $role);
+                                echo "<option value='$role' $selected>$display_name</option>";
                             }
                             ?>
                         </select>
                     </div>
+                    
+                    <hr class="mt-4 mb-4">
+                    
+                    <!-- KELOMPOK DATA PAYROLL -->
+                    <h5 class="mb-3">Data Payroll (PTKP)</h5>
                     
                     <div class="mb-3 form-check">
                         <input type="checkbox" class="form-check-input" id="is_menikah" name="is_menikah" value="1" <?php echo $data['is_menikah'] ? 'checked' : ''; ?>>
@@ -142,26 +152,40 @@ $data = $result->fetch_assoc();
                         <input type="number" class="form-control" name="jumlah_anak" min="0" value="<?php echo $data['jumlah_anak']; ?>">
                     </div> 
                     
+                    <hr class="mt-4 mb-4">
+                    
+                    <!-- KELOMPOK STATUS AKTIF -->
+                    <h5 class="mb-3">Status Sistem</h5>
+
                     <div class="mb-3 form-check">
                         <input type="checkbox" class="form-check-input" id="is_aktif" name="is_aktif" value="1" <?php echo $data['is_aktif'] ? 'checked' : ''; ?>>
                         <label class="form-check-label" for="is_aktif">Status Aktif (Login/Payroll)</label>
                     </div>
                     
-                    <button type="submit" class="btn btn-primary w-100">Simpan Perubahan Pengguna</button>
+                    <button type="submit" class="btn btn-primary w-100 mt-4">Simpan Perubahan Pengguna</button>
                 </form>
+            </div>
+        </div>
+        
+        <!-- Kolom Kanan: Informasi Tambahan -->
+        <div class="col-md-6">
+            <div class="card shadow-sm p-4 bg-light">
+                <h4 class="h5">Informasi Detail</h4>
+                <ul class="list-group list-group-flush small">
+                    <!-- Asumsi tgl_daftar diambil dari SELECT * -->
+                    <li class="list-group-item"><strong>Tanggal Daftar:</strong> <?php echo htmlspecialchars($data['tgl_daftar'] ?? 'N/A'); ?></li>
+                    <li class="list-group-item"><strong>Password Saat Ini:</strong> *Tersimpan terenkripsi*</li>
+                    <li class="list-group-item"><strong>Status Akun:</strong> <?php echo $data['is_aktif'] ? '<span class="badge bg-success">AKTIF</span>' : '<span class="badge bg-danger">NON-AKTIF</span>'; ?></li>
+                </ul>
             </div>
         </div>
     </div>
 </div>
 
 <script>
-    // Ambil data dari PHP
-    const role = '<?php echo $role_login; ?>';
-    const nama = '<?php echo $nama_login; ?>';
-    const id = '<?php echo $id_login; ?>';
-    
-    // Update footer info
-    document.getElementById('access-info').innerHTML = `Akses: **${role}** (${nama}, ID ${id})`;
+    document.getElementById('access-info').innerHTML = 'Akses: **<?php echo $role_login; ?>** (<?php echo $nama_login; ?>, ID <?php echo $id_login; ?>)';
 </script>
 
 <?php include '_footer.php'; // Footer Bootstrap ?>
+
+ini juga

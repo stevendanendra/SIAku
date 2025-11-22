@@ -3,53 +3,92 @@
 session_start();
 include 'koneksi.php';
 
+// ===============================================
+// VALIDASI AKSES
+// ===============================================
 if (!isset($_SESSION['role']) || $_SESSION['role'] !== 'Owner' || $_SERVER['REQUEST_METHOD'] !== 'POST') {
     header("Location: login.html");
     exit();
 }
 
-$jumlah_modal = (int)$_POST['jumlah_modal'];
-$redirect_url = 'input_modal_awal.php'; // Default redirect saat gagal
+$id_pengguna = $_SESSION['id_pengguna'];
+$jumlah_modal = (int)($_POST['jumlah_modal'] ?? 0);
+$redirect_url = 'input_modal_awal.php';
 
+// ===============================================
+// VALIDASI INPUT
+// ===============================================
 if ($jumlah_modal <= 0) {
     $_SESSION['error_message'] = "Jumlah modal harus lebih dari nol.";
     header("Location: " . $redirect_url);
     exit();
 }
 
-// Mulai transaksi
+// ===============================================
+// MULAI TRANSAKSI
+// ===============================================
 $conn->begin_transaction();
 
 try {
+
     $tgl_jurnal = date('Y-m-d');
-    // FIX KRITIS: Ganti deskripsi dari 'Setoran Modal Awal' menjadi umum
-    $deskripsi_jurnal = "Setoran Modal Tambahan dari Pemilik"; 
-    $no_bukti_jurnal = "MDL-" . date('YmdHis'); 
+    $deskripsi_jurnal = "Setoran Modal Tambahan dari Pemilik";
+    $no_bukti_jurnal = "MDL-" . date('YmdHis');
 
-    // Jurnal 1: DEBIT Kas (1101) - Aset Bertambah
-    $sql_debit = "INSERT INTO tr_jurnal_umum (tgl_jurnal, id_akun, posisi, nilai, no_bukti, deskripsi) 
-                  VALUES ('$tgl_jurnal', 1101, 'D', $jumlah_modal, '$no_bukti_jurnal', '$deskripsi_jurnal')";
+    // -------------------------------------------
+    // Jurnal 1: DEBIT Kas (1101)
+    // -------------------------------------------
+    $sql_debit = "INSERT INTO tr_jurnal_umum 
+        (tgl_jurnal, id_akun, posisi, nilai, no_bukti, deskripsi) 
+        VALUES 
+        ('$tgl_jurnal', 1101, 'D', $jumlah_modal, '$no_bukti_jurnal', '$deskripsi_jurnal')";
+
     if (!$conn->query($sql_debit)) {
-        throw new Exception("Gagal menjurnal Debet Kas: " . $conn->error);
+        throw new Exception("Gagal menjurnal DEBIT Kas: " . $conn->error);
     }
 
-    // Jurnal 2: KREDIT Modal (3101) - Modal Bertambah
-    $sql_kredit = "INSERT INTO tr_jurnal_umum (tgl_jurnal, id_akun, posisi, nilai, no_bukti, deskripsi) 
-                   VALUES ('$tgl_jurnal', 3101, 'K', $jumlah_modal, '$no_bukti_jurnal', '$deskripsi_jurnal')";
+    // -------------------------------------------
+    // Jurnal 2: KREDIT Modal (3101)
+    // -------------------------------------------
+    $sql_kredit = "INSERT INTO tr_jurnal_umum 
+        (tgl_jurnal, id_akun, posisi, nilai, no_bukti, deskripsi) 
+        VALUES 
+        ('$tgl_jurnal', 3101, 'K', $jumlah_modal, '$no_bukti_jurnal', '$deskripsi_jurnal')";
+
     if (!$conn->query($sql_kredit)) {
-        throw new Exception("Gagal menjurnal Kredit Modal: " . $conn->error);
+        throw new Exception("Gagal menjurnal KREDIT Modal: " . $conn->error);
     }
 
-    // Commit transaksi
+    // -------------------------------------------
+    // LOG AKTIVITAS (WAJIB untuk transaksi modal)
+    // -------------------------------------------
+    $aksi = $conn->real_escape_string("Input Modal Tambahan sebesar Rp " . number_format($jumlah_modal));
+    $sql_log = "INSERT INTO log_aktivitas (id_pengguna, aktivitas, waktu) 
+                VALUES ('$id_pengguna', '$aksi', NOW())";
+
+    if (!$conn->query($sql_log)) {
+        throw new Exception("Gagal mencatat log aktivitas: " . $conn->error);
+    }
+
+    // -------------------------------------------
+    // SEMUA BERHASIL → COMMIT
+    // -------------------------------------------
     $conn->commit();
-    $_SESSION['success_message'] = "Setoran Modal Tambahan sebesar Rp " . number_format($jumlah_modal, 0, ',', '.') . " berhasil dicatat.";
-    header("Location: dashboard_owner.php"); // Redirect ke dashboard setelah sukses
-    
+
+    $_SESSION['success_message'] = 
+        "Setoran Modal Tambahan sebesar Rp " . number_format($jumlah_modal, 0, ',', '.') . " berhasil dicatat.";
+
+    header("Location: dashboard_owner.php");
+    exit();
+
 } catch (Exception $e) {
-    // Rollback jika ada error
+
+    // Rollback
     $conn->rollback();
+
     $_SESSION['error_message'] = "Gagal mencatat Setoran Modal: " . $e->getMessage();
     header("Location: " . $redirect_url);
+    exit();
 }
 
 $conn->close();

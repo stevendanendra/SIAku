@@ -143,21 +143,33 @@ if (!empty($filter_akun_id)) {
         </div>
 
         <div class="table-responsive">
-            <table class="table table-bordered table-striped table-sm">
+            <table class="table table-bordered table-sm">
                 <thead class="table-dark">
                     <tr>
-                        <th>Tanggal</th>
-                        <th>No. Bukti</th>
-                        <th>Keterangan</th>
-                        <th class="right">Debit (D)</th>
-                        <th class="right">Kredit (K)</th>
-                        <th class="right">Saldo Akhir</th>
+                        <th style="width: 10%;">Tanggal</th>
+                        <th style="width: 15%;">No. Bukti</th>
+                        <th style="width: 30%;">Keterangan</th>
+                        <th class="text-end" style="width: 10%;">Debit (D)</th>
+                        <th class="text-end" style="width: 10%;">Kredit (K)</th>
+                        <th class="text-end bg-light text-dark fw-bold" style="width: 15%;">Saldo Akhir</th>
                     </tr>
                 </thead>
                 <tbody>
                     <?php 
                     $saldo_akhir = $current_saldo_awal; // Mulai dari Saldo Awal
                     
+                    // Baris Saldo Awal (Opsional tapi membantu)
+                    if ($current_saldo_awal != 0) {
+                        echo '<tr>';
+                        echo '<td></td>';
+                        echo '<td></td>';
+                        echo '<td>SALDO AWAL</td>';
+                        echo '<td class="text-primary text-end"></td>';
+                        echo '<td class="text-danger text-end"></td>';
+                        echo '<td class="text-end bg-light fw-bold">Rp ' . number_format(abs($saldo_akhir), 0, ',', '.') . ' (' . $current_saldo_normal . ')</td>';
+                        echo '</tr>';
+                    }
+
                     while ($row = $mutasi_query->fetch_assoc()): 
                         $nilai = $row['nilai'];
                         $posisi = $row['posisi'];
@@ -168,15 +180,19 @@ if (!empty($filter_akun_id)) {
                         } else {
                             $saldo_akhir -= $nilai; // Kurang jika posisi berlawanan
                         }
+                        
+                        // FIX LOGIKA SALDO: Menampilkan Saldo Akhir Mutlak dan Posisi Saldo Normal
+                        $saldo_tampil = abs($saldo_akhir);
+                        $saldo_posisi = ($saldo_akhir >= 0) ? $current_saldo_normal : ($current_saldo_normal === 'D' ? 'K' : 'D');
                     ?>
                     <tr>
                         <td><?php echo $row['tgl_jurnal']; ?></td>
                         <td><?php echo htmlspecialchars($row['no_bukti']); ?></td>
                         <td><?php echo htmlspecialchars($row['deskripsi']); ?></td>
-                        <td class="right text-primary"><?php echo $posisi === 'D' ? number_format($nilai, 0, ',', '.') : ''; ?></td>
-                        <td class="right text-danger"><?php echo $posisi === 'K' ? number_format($nilai, 0, ',', '.') : ''; ?></td>
-                        <td class="saldo right fw-bold bg-light">
-                            Rp <?php echo number_format($saldo_akhir, 0, ',', '.'); ?>
+                        <td class="text-end text-primary"><?php echo $posisi === 'D' ? number_format($nilai, 0, ',', '.') : ''; ?></td>
+                        <td class="text-end text-danger"><?php echo $posisi === 'K' ? number_format($nilai, 0, ',', '.') : ''; ?></td>
+                        <td class="text-end bg-light fw-bold">
+                            Rp <?php echo number_format($saldo_tampil, 0, ',', '.'); ?> (<?php echo $saldo_posisi; ?>)
                         </td>
                     </tr>
                     <?php endwhile; ?>
@@ -189,7 +205,7 @@ if (!empty($filter_akun_id)) {
         <h2 class="mb-3">3. Ringkasan Saldo Akhir (Hasil Posting)</h2>
         <p class="text-muted">Klik tombol "Proses Buku Besar Sekarang" untuk memperbarui saldo, lalu pilih akun di filter atas untuk melihat detail mutasi.</p>
         <div class="table-responsive">
-            <table class="table table-bordered table-striped table-sm">
+            <table class="table table-bordered table-sm">
                 <thead class="table-dark">
                     <tr>
                         <th>No. Akun</th>
@@ -198,7 +214,7 @@ if (!empty($filter_akun_id)) {
                         <th class="text-end">Saldo Awal</th>
                         <th class="text-end">Mutasi Debit</th>
                         <th class="text-end">Mutasi Kredit</th>
-                        <th class="text-end">Saldo Saat Ini</th>
+                        <th class="text-end bg-light text-dark fw-bold">Saldo Saat Ini</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -208,18 +224,26 @@ if (!empty($filter_akun_id)) {
                     
                     // Query Mutasi Sederhana untuk Summary (Mencari mutasi dari tr_jurnal_umum)
                     $sql_mutasi = "SELECT COALESCE(SUM(CASE WHEN posisi='D' THEN nilai ELSE 0 END), 0) AS total_debit, 
-                                          COALESCE(SUM(CASE WHEN posisi='K' THEN nilai ELSE 0 END), 0) AS total_kredit 
-                                   FROM tr_jurnal_umum WHERE id_akun = {$row['id_akun']}";
+                                         COALESCE(SUM(CASE WHEN posisi='K' THEN nilai ELSE 0 END), 0) AS total_kredit 
+                                    FROM tr_jurnal_umum WHERE id_akun = {$row['id_akun']}";
                     $mutasi_result = $conn->query($sql_mutasi)->fetch_assoc();
+                    
+                    // FIX LOGIKA SALDO SAAT INI (Tampil Mutlak)
+                    $saldo_saat_ini_mutlak = abs($row['saldo_saat_ini']);
+                    $current_net = ($row['saldo_normal'] == 'D') ? ($row['saldo_saat_ini'] - $row['saldo_awal']) : ($row['saldo_awal'] - $row['saldo_saat_ini']); // Hanya untuk cek posisi
+
+                    $final_saldo_posisi = ($row['saldo_saat_ini'] >= 0) ? $row['saldo_normal'] : ($row['saldo_normal'] == 'D' ? 'K' : 'D');
                     ?>
                     <tr>
                         <td><?php echo $row['id_akun']; ?></td>
                         <td><?php echo htmlspecialchars($row['nama_akun']); ?></td>
                         <td><?php echo $row['saldo_normal']; ?></td>
-                        <td class="right">Rp <?php echo number_format($row['saldo_awal'], 0, ',', '.'); ?></td>
-                        <td class="right text-primary">Rp <?php echo number_format($mutasi_result['total_debit'], 0, ',', '.'); ?></td>
-                        <td class="right text-danger">Rp <?php echo number_format($mutasi_result['total_kredit'], 0, ',', '.'); ?></td>
-                        <td class="right fw-bold bg-light">Rp <?php echo number_format($row['saldo_saat_ini'], 0, ',', '.'); ?></td>
+                        <td class="text-end">Rp <?php echo number_format($row['saldo_awal'], 0, ',', '.'); ?></td>
+                        <td class="text-end text-primary">Rp <?php echo number_format($mutasi_result['total_debit'], 0, ',', '.'); ?></td>
+                        <td class="text-end text-danger">Rp <?php echo number_format($mutasi_result['total_kredit'], 0, ',', '.'); ?></td>
+                        <td class="text-end fw-bold bg-light">
+                            Rp <?php echo number_format($saldo_saat_ini_mutlak, 0, ',', '.'); ?> (<?php echo $final_saldo_posisi; ?>)
+                        </td>
                     </tr>
                     <?php endwhile; ?>
                 </tbody>

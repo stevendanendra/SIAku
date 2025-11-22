@@ -24,7 +24,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action']) && $_POST['a
     $nama_akun = $conn->real_escape_string($_POST['nama_akun']);
     $tipe_akun = $conn->real_escape_string($_POST['tipe_akun']);
     $saldo_normal = $conn->real_escape_string($_POST['saldo_normal']);
-    $saldo_awal = $conn->real_escape_string($_POST['saldo_awal']); // Saldo Awal juga bisa diubah Owner
+    // Saldo Awal diizinkan diubah
+    $saldo_awal = $conn->real_escape_string($_POST['saldo_awal']); 
     
     // Validasi dasar
     if (empty($nama_akun) || empty($tipe_akun) || empty($saldo_normal)) {
@@ -41,7 +42,10 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action']) && $_POST['a
                 WHERE id_akun = '$id_akun'";
         
         if ($conn->query($sql) === TRUE) {
-            $success_message = "Akun $id_akun berhasil diperbarui. Silakan proses Buku Besar untuk melihat perubahan saldo akhir.";
+            // FIX: Gunakan SESSION untuk pesan sukses agar bisa dilihat setelah redirect
+            $_SESSION['success_message_edit'] = "Akun $id_akun berhasil diperbarui. Silakan proses Buku Besar untuk melihat perubahan saldo akhir.";
+            header("Location: crud_master_akun.php");
+            exit();
         } else {
             $error_message = "Error saat memperbarui akun: " . $conn->error;
         }
@@ -63,10 +67,12 @@ $data = $result->fetch_assoc();
 <div class="container mt-5">
     
     <h1 class="mb-4">Ubah Data Master Akun (COA)</h1>
-    <div class="d-flex gap-3 mb-4 p-2 bg-light rounded shadow-sm">
-        <a href="crud_master_akun.php" class="btn btn-primary btn-sm active">📊 Master Akun (COA)</a>
-        <a href="crud_master_layanan.php" class="btn btn-outline-primary btn-sm">🧼 Master Layanan Jasa</a>
-        <a href="crud_master_pengguna.php" class="btn btn-outline-primary btn-sm">👤 Master Pengguna & Karyawan</a>
+    
+    <div class="d-flex gap-3 mb-4 border-bottom pb-3"> 
+        <a href="crud_master_akun.php" class="btn btn-dark btn-sm active">📊 Master Akun (COA)</a>
+        <a href="crud_master_layanan.php" class="btn btn-outline-dark btn-sm">🧼 Master Layanan Jasa</a>
+        <a href="crud_master_pengguna.php" class="btn btn-outline-dark btn-sm">👤 Master Pengguna & Karyawan</a>
+        <a href="payroll_komponen.php" class="btn btn-outline-dark btn-sm">💵 Pengaturan Payroll</a>
     </div>
 
     <p><a href="crud_master_akun.php" class="btn btn-sm btn-outline-secondary">← Kembali ke Daftar Akun</a></p>
@@ -75,7 +81,7 @@ $data = $result->fetch_assoc();
     <div class="row">
         <div class="col-md-6">
             <div class="card shadow-sm p-4">
-                <h3 class="card-title mb-3">Detail Akun: <?php echo htmlspecialchars($data['nama_akun']); ?></h3>
+                <h3 class="card-title mb-3">Edit Akun: **<?php echo htmlspecialchars($data['nama_akun']); ?>**</h3>
                 
                 <?php if ($error_message) echo "<div class='alert alert-danger'>$error_message</div>"; ?>
                 <?php if ($success_message) echo "<div class='alert alert-success'>$success_message</div>"; ?>
@@ -98,9 +104,10 @@ $data = $result->fetch_assoc();
                         <select class="form-select" name="tipe_akun" required>
                             <?php 
                             $tipe_options = ['Aktiva', 'Kewajiban', 'Modal', 'Pendapatan', 'Beban'];
+                            $tipe_map = ['Aktiva'=>'1xxx', 'Kewajiban'=>'2xxx', 'Modal'=>'3xxx', 'Pendapatan'=>'4xxx', 'Beban'=>'5xxx'];
                             foreach ($tipe_options as $tipe) {
                                 $selected = ($tipe == $data['tipe_akun']) ? 'selected' : '';
-                                echo "<option value='$tipe' $selected>$tipe</option>";
+                                echo "<option value='$tipe' $selected>{$tipe_map[$tipe]} - $tipe</option>";
                             }
                             ?>
                         </select>
@@ -116,11 +123,11 @@ $data = $result->fetch_assoc();
                     
                     <div class="mb-3">
                         <label for="saldo_awal" class="form-label">Saldo Awal (Rp):</label>
-                        <input type="number" class="form-control" name="saldo_awal" value="<?php echo $data['saldo_awal']; ?>" required>
+                        <input type="number" class="form-control text-end" name="saldo_awal" value="<?php echo $data['saldo_awal']; ?>" required>
                     </div>
 
-                    <div class="alert alert-warning mt-3">
-                        ⚠️ **Peringatan:** Saldo Saat Ini: **Rp <?php echo number_format($data['saldo_saat_ini'], 0, ',', '.'); ?>**. Saldo akhir hanya berubah setelah Owner menjalankan proses Buku Besar.
+                    <div class="alert alert-info mt-3 small">
+                        Saldo Saat Ini di Database: **Rp <?php echo number_format($data['saldo_saat_ini'], 0, ',', '.'); ?>**. Saldo akhir akan diperbarui setelah menjalankan proses Buku Besar.
                     </div>
                     
                     <button type="submit" class="btn btn-primary w-100">Simpan Perubahan</button>

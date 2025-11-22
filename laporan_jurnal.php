@@ -81,7 +81,7 @@ if (!$jurnal_query) {
     
     <h1 class="mb-4">4. Laporan Jurnal Umum (Semua Transaksi)</h1>
     
-    <p class="text-muted"><a href="dashboard_owner.php">← Kembali ke Dashboard Owner</a></p>
+    <p class="text-muted"><a href="dashboard_owner.php" class="btn btn-sm btn-outline-secondary">← Kembali ke Dashboard Owner</a></p>
     <hr>
     
     <?php if ($error_message) echo "<div class='alert alert-danger'>$error_message</div>"; ?>
@@ -126,16 +126,16 @@ if (!$jurnal_query) {
     
     <h2>2. Rincian Jurnal</h2>
     <div class="table-responsive">
-        <table class="table table-bordered table-striped table-sm">
+        <table class="table table-bordered table-sm">
             <thead class="table-dark">
                 <tr>
-                    <th>Tanggal</th>
-                    <th>No. Bukti</th>
-                    <th>Deskripsi Transaksi</th>
-                    <th>No. Akun</th>
-                    <th>Nama Akun</th>
-                    <th class="text-end">Debit (D)</th>
-                    <th class="text-end">Kredit (K)</th>
+                    <th style="width: 10%;">Tanggal</th>
+                    <th style="width: 15%;">No. Bukti</th>
+                    <th style="width: 30%;">Deskripsi Transaksi</th>
+                    <th style="width: 10%;">No. Akun</th>
+                    <th style="width: 15%;">Nama Akun</th>
+                    <th class="text-end" style="width: 10%;">Debit (D)</th>
+                    <th class="text-end" style="width: 10%;">Kredit (K)</th>
                 </tr>
             </thead>
             <tbody>
@@ -153,7 +153,8 @@ if (!$jurnal_query) {
                     // --- LOGIKA GROUPING DAN TOTAL ---
                     if ($current_no_bukti !== $row['no_bukti'] && $first_row_processed) {
                         // 1. Tampilkan Total Transaksi Sebelumnya
-                        echo '<tr class="table-info">';
+                        // FIX UI: Gunakan background netral
+                        echo '<tr class="bg-light">';
                         echo '<td colspan="5" class="text-end fw-bold">TOTAL TRANSAKSI ' . htmlspecialchars($current_no_bukti) . '</td>';
                         echo '<td class="text-end fw-bold">' . number_format($total_debit_transaksi, 0, ',', '.') . '</td>';
                         echo '<td class="text-end fw-bold">' . number_format($total_kredit_transaksi, 0, ',', '.') . '</td>';
@@ -161,8 +162,10 @@ if (!$jurnal_query) {
 
                         // 2. Tampilkan Status Keseimbangan
                         if ($total_debit_transaksi == $total_kredit_transaksi) {
+                            // FIX UI: Ganti warna success menjadi netral/minimalis
                             echo '<tr class="bg-success-subtle"><td colspan="7" class="text-center fw-bold text-success">✔️ JURNAL SEIMBANG</td></tr>';
                         } else {
+                            // FIX UI: Ganti warna danger menjadi lebih tegas
                             $selisih = abs($total_debit_transaksi - $total_kredit_transaksi);
                             echo '<tr class="bg-danger-subtle"><td colspan="7" class="text-center fw-bold text-danger">❌ JURNAL TIDAK SEIMBANG! SELISIH: Rp ' . number_format($selisih, 0, ',', '.') . '</td></tr>';
                         }
@@ -172,7 +175,7 @@ if (!$jurnal_query) {
                         $total_kredit_transaksi = 0;
                         
                         // Tambahkan baris pemisah antar transaksi
-                        echo '<tr><td colspan="7" style="height: 5px; background-color: #f2f2f2;"></td></tr>';
+                        echo '<tr><td colspan="7" style="height: 15px; background-color: #f7f7f7; border: none;"></td></tr>';
                     }
                     
                     $current_no_bukti = $row['no_bukti'];
@@ -186,15 +189,15 @@ if (!$jurnal_query) {
                     <td><?php echo htmlspecialchars($row['deskripsi']); ?></td>
                     <td><?php echo $row['id_akun']; ?></td>
                     <td><?php echo htmlspecialchars($row['nama_akun']); ?></td>
-                    <td class="text-end text-primary"><?php echo $nilai_debit > 0 ? number_format($nilai_debit, 0, ',', '.') : ''; ?></td>
-                    <td class="text-end text-danger"><?php echo $nilai_kredit > 0 ? number_format($nilai_kredit, 0, ',', '.') : ''; ?></td>
+                    <td class="text-end text-primary fw-bold"><?php echo $nilai_debit > 0 ? number_format($nilai_debit, 0, ',', '.') : ''; ?></td>
+                    <td class="text-end text-danger fw-bold"><?php echo $nilai_kredit > 0 ? number_format($nilai_kredit, 0, ',', '.') : ''; ?></td>
                 </tr>
                 <?php endwhile; ?>
 
                 <?php 
                 // 4. Tampilkan Total Transaksi TERAKHIR
                 if ($first_row_processed) {
-                    echo '<tr class="table-info">';
+                    echo '<tr class="bg-light">';
                     echo '<td colspan="5" class="text-end fw-bold">TOTAL TRANSAKSI ' . htmlspecialchars($current_no_bukti) . '</td>';
                     echo '<td class="text-end fw-bold">' . number_format($total_debit_transaksi, 0, ',', '.') . '</td>';
                     echo '<td class="text-end fw-bold">' . number_format($total_kredit_transaksi, 0, ',', '.') . '</td>';
