@@ -43,7 +43,6 @@ if (!$log_query) {
                 <tr>
                     <th style="width: 15%;">Waktu</th>
                     <th style="width: 10%;">User ID</th>
-                    <th style="width: 15%;">Username</th>
                     <th style="width: 20%;">Modul</th>
                     <th>Deskripsi Aktivitas</th>
                     <th style="width: 10%;">IP</th>
@@ -55,7 +54,6 @@ if (!$log_query) {
                     <tr>
                         <td><?php echo $row['tgl_waktu']; ?></td>
                         <td><?php echo $row['id_pengguna']; ?></td>
-                        <td><?php echo htmlspecialchars($row['username']); ?></td>
                         <td><span class="badge bg-primary"><?php echo htmlspecialchars($row['modul']); ?></span></td>
                         <td><?php echo htmlspecialchars($row['deskripsi']); ?></td>
                         <td><?php echo htmlspecialchars($row['ip_address']); ?></td>

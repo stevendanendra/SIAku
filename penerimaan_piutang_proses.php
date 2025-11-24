@@ -20,8 +20,10 @@ if (!isset($_SESSION['role']) || $_SESSION['role'] !== 'Karyawan' || $_SERVER["R
     exit(); 
 }
 
-// Ambil input
 $id_karyawan = $_SESSION['id_pengguna'];
+$username_login = $_SESSION['nama'] ?? $_SESSION['nama_lengkap'] ?? "SYSTEM_USER";
+
+// Ambil input
 $id_penjualan = $conn->real_escape_string($_POST['id_penjualan'] ?? 0);
 $jumlah_diterima = (int)($conn->real_escape_string($_POST['jumlah_bayar'] ?? 0));
 $sisa_piutang = (int)($conn->real_escape_string($_POST['sisa_piutang'] ?? 0));
@@ -30,7 +32,7 @@ $tanggal_transaksi = $conn->real_escape_string($_POST['tgl_bayar'] ?? date('Y-m-
 
 // Validasi
 if ($jumlah_diterima <= 0 || $jumlah_diterima > $sisa_piutang) {
-    $_SESSION['error_message'] = "Jumlah yang diterima ($jumlah_diterima) tidak valid atau melebihi sisa piutang ($sisa_piutang).";
+    $_SESSION['error_message'] = "Jumlah diterima ($jumlah_diterima) tidak valid atau melebihi sisa piutang ($sisa_piutang).";
     header("Location: penerimaan_piutang_form.php?id_penjualan=$id_penjualan");
     exit();
 }
@@ -51,7 +53,7 @@ try {
                           " . AKUN_KAS_ID . ", 'D', '$jumlah_diterima')";
 
     if (!$conn->query($sql_debit)) {
-        throw new Exception("Gagal menjurnal Debet Kas: " . $conn->error);
+        throw new Exception("Gagal jurnal Debet Kas: " . $conn->error);
     }
 
     // Jurnal Kredit Piutang
@@ -61,57 +63,66 @@ try {
                            " . AKUN_PIUTANG_ID . ", 'K', '$jumlah_diterima')";
     
     if (!$conn->query($sql_kredit)) {
-        throw new Exception("Gagal menjurnal Kredit Piutang Usaha: " . $conn->error);
+        throw new Exception("Gagal jurnal Kredit Piutang: " . $conn->error);
     }
 
     // Update status lunas
     $sisa_akhir = $sisa_piutang - $jumlah_diterima;
     $new_is_lunas = ($sisa_akhir <= 0) ? 1 : 0;
 
-    $sql_update_lunas = "UPDATE tr_penjualan 
-                         SET is_lunas = $new_is_lunas 
-                         WHERE id_penjualan = '$id_penjualan'";
+    $sql_update = "UPDATE tr_penjualan 
+                   SET is_lunas = $new_is_lunas 
+                   WHERE id_penjualan = '$id_penjualan'";
 
-    if (!$conn->query($sql_update_lunas)) {
-        throw new Exception("Gagal memperbarui status lunas: " . $conn->error);
+    if (!$conn->query($sql_update)) {
+        throw new Exception("Gagal update status piutang: " . $conn->error);
     }
 
-    // Commit transaksi
+    // Commit
     $conn->commit();
 
     // ========================================================
-    // LOG AKTIVITAS — BERHASIL
+    // LOG AKTIVITAS (BERHASIL)
     // ========================================================
-    $aksi = "Penerimaan Piutang P-$id_penjualan";
-    $status = ($new_is_lunas == 1) 
-                ? "Berhasil (LUNAS PENUH)" 
-                : "Berhasil (Angsuran)";
+    $log_deskripsi = $conn->real_escape_string(
+        "Penerimaan Piutang P-$id_penjualan (" . 
+        ($new_is_lunas ? "LUNAS" : "Angsuran") . 
+        ") sebesar Rp " . number_format($jumlah_diterima, 0, ',', '.')
+    );
 
-    $log_sql = "INSERT INTO aktivitas_log (id_pengguna, aksi, status, waktu)
-                VALUES ('$id_karyawan', '$aksi', '$status', NOW())";
+    $ip_addr = $_SERVER['REMOTE_ADDR'];
+
+    $log_sql = "INSERT INTO tr_log_aktivitas 
+                (tgl_waktu, id_pengguna, username, deskripsi, modul, ip_address)
+                VALUES (NOW(), '$id_karyawan', '$username_login', '$log_deskripsi', 
+                        'Penerimaan Piutang', '$ip_addr')";
     $conn->query($log_sql);
 
     // Pesan sukses
-    $_SESSION['success_message'] = "Penerimaan Piutang P-**$id_penjualan** berhasil **$status** sebesar Rp " . 
-                                   number_format($jumlah_diterima) . 
-                                   ". Sisa Piutang: Rp " . number_format(max(0, $sisa_akhir)) . ".";
+    $_SESSION['success_message'] =
+        "Penerimaan Piutang P-{$id_penjualan} berhasil. 
+         Jumlah diterima: Rp " . number_format($jumlah_diterima, 0, ',', '.') .
+        ". Sisa Piutang: Rp " . number_format(max(0, $sisa_akhir), 0, ',', '.') . ".";
 
 } catch (Exception $e) {
 
-    // Rollback
     $conn->rollback();
 
     // ========================================================
-    // LOG AKTIVITAS — GAGAL
+    // LOG AKTIVITAS (GAGAL)
     // ========================================================
-    $aksi = "Penerimaan Piutang (GAGAL) P-$id_penjualan";
-    $status = $conn->real_escape_string($e->getMessage());
+    $log_deskripsi = $conn->real_escape_string(
+        "Gagal menerima piutang P-$id_penjualan: " . $e->getMessage()
+    );
+    $ip_addr = $_SERVER['REMOTE_ADDR'];
 
-    $log_sql = "INSERT INTO aktivitas_log (id_pengguna, aksi, status, waktu)
-                VALUES ('$id_karyawan', '$aksi', '$status', NOW())";
+    $log_sql = "INSERT INTO tr_log_aktivitas 
+                (tgl_waktu, id_pengguna, username, deskripsi, modul, ip_address)
+                VALUES (NOW(), '$id_karyawan', '$username_login', '$log_deskripsi', 
+                        'Penerimaan Piutang', '$ip_addr')";
     $conn->query($log_sql);
 
-    $_SESSION['error_message'] = "Pelunasan Piutang GAGAL diproses! Pesan Error: " . $e->getMessage();
+    $_SESSION['error_message'] = "Pelunasan Piutang GAGAL! Error: " . $e->getMessage();
 }
 
 $conn->close();

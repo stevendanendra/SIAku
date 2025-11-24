@@ -30,6 +30,14 @@ $id_akun_debit = $conn->real_escape_string($_POST['id_akun_debit'] ?? '');
 $jumlah = (int)($conn->real_escape_string($_POST['jumlah'] ?? 0));
 $metode_bayar = $_POST['metode_bayar'] ?? ''; 
 
+// AMBIL ID SUPPLIER (NEW)
+$id_supplier_post = isset($_POST['id_supplier']) ? $conn->real_escape_string($_POST['id_supplier']) : null;
+$id_supplier_db = "NULL";
+if (!empty($id_supplier_post) && is_numeric($id_supplier_post)) {
+    $id_supplier_db = "'" . $id_supplier_post . "'";
+}
+
+// cicilan / jatuh tempo
 $tgl_jatuh_tempo_post = $_POST['tgl_jatuh_tempo'] ?? null;
 $jml_bulan_cicilan_post = $_POST['jml_bulan_cicilan'] ?? null; 
 
@@ -72,6 +80,7 @@ if ($metode_bayar == 'Tunai') {
     $tgl_jatuh_tempo_db = "'" . $conn->real_escape_string($tgl_jatuh_tempo_post) . "'";
 
     if ($metode_bayar == 'Kredit_Cicilan') {
+        $jml_bulan_cicilan_post = (int)$jml_bulan_cicilan_post;
         if (empty($jml_bulan_cicilan_post) || $jml_bulan_cicilan_post < 2) {
             $_SESSION['error_message'] = "Jumlah bulan cicilan minimal 2.";
             header("Location: $redirect_url");
@@ -95,13 +104,14 @@ $conn->begin_transaction();
 try {
     // ----------------------------------------------------------------------------------
     // 2. CATAT TRANSAKSI PENGELUARAN
+    // Tambahkan id_supplier dalam kolom insert (gunakan $id_supplier_db yang sudah siap NULL/'id')
     // ----------------------------------------------------------------------------------
     $sql_pengeluaran = "INSERT INTO tr_pengeluaran 
                         (tgl_transaksi, deskripsi, jumlah, tgl_jatuh_tempo, jml_bulan_cicilan, 
-                         id_akun_beban, id_akun_kas, id_karyawan)
+                         id_akun_beban, id_akun_kas, id_supplier, id_karyawan)
                         VALUES ('$tanggal_transaksi', '$deskripsi', '$jumlah', 
                                 $tgl_jatuh_tempo_db, $jml_bulan_cicilan_db, 
-                                '$id_akun_debit', '$id_akun_kredit', '{$id_karyawan}')";
+                                '$id_akun_debit', '$id_akun_kredit', {$id_supplier_db}, '{$id_karyawan}')";
 
     if (!$conn->query($sql_pengeluaran)) {
         throw new Exception("Gagal mencatat transaksi pengeluaran: " . $conn->error);
@@ -165,7 +175,7 @@ try {
     $aksi = "Transaksi Pengeluaran (GAGAL): " . $e->getMessage();
     
     $log_sql = "INSERT INTO tr_log_aktivitas 
-                (tgl_waktu, id_pengguna, suername, deskripsi, modul, ip_address)
+                (tgl_waktu, id_pengguna, username, deskripsi, modul, ip_address)
                 VALUES (NOW(), '$id_karyawan', '$username', '$aksi', 'Pengeluaran Kas', '{$_SERVER['REMOTE_ADDR']}')";
     $conn->query($log_sql);
 
