@@ -49,7 +49,7 @@ $id_login = htmlspecialchars($_SESSION['id_pengguna']);
 
     <div class="card mb-5 shadow-lg border-primary">
         <div class="card-header bg-primary text-white fw-bold h5">
-            <span class="me-2">🛠️</span> 1. Pengaturan Awal & Input Transaksi Dasar
+            <span class="me-2">🛠️</span> Pengaturan & Input Transaksi Owner
         </div>
         <div class="card-body">
             <div class="row row-cols-1 row-cols-md-3 g-4"> 
@@ -59,7 +59,7 @@ $id_login = htmlspecialchars($_SESSION['id_pengguna']);
                         <div class="card h-100 text-center shadow-sm hover-grow border-success border-2">
                             <div class="card-body">
                                 <h2 class="display-6 text-success mb-2">💰</h2>
-                                <h5 class="card-title text-success">1. Input Modal Awal</h5>
+                                <h5 class="card-title text-success">Input Modal</h5>
                                 <p class="card-text text-muted small">Catat setoran modal pertama atau tambahan.</p>
                             </div>
                         </div>
@@ -71,7 +71,7 @@ $id_login = htmlspecialchars($_SESSION['id_pengguna']);
                         <div class="card h-100 text-center shadow-sm hover-grow border-danger border-2">
                             <div class="card-body">
                                 <h2 class="display-6 text-danger mb-2">💸</h2>
-                                <h5 class="card-title text-danger">2. Pengeluaran & Prive</h5>
+                                <h5 class="card-title text-danger">Penarikan Prive</h5>
                                 <p class="card-text text-muted small">Jurnal kas keluar untuk operasional dan penarikan pribadi (Prive).</p>
                             </div>
                         </div>
@@ -83,8 +83,8 @@ $id_login = htmlspecialchars($_SESSION['id_pengguna']);
                         <div class="card h-100 text-center shadow-sm hover-grow border-dark border-2">
                             <div class="card-body">
                                 <h2 class="display-6 text-dark mb-2">📑</h2>
-                                <h5 class="card-title text-dark">3. Master Data & Payroll</h5>
-                                <p class="card-text text-muted small">Kelola COA, Layanan, Pengguna, dan Komponen Gaji.</p>
+                                <h5 class="card-title text-dark">Master Data & Pengaturan Payroll</h5>
+                                <p class="card-text text-muted small">Kelola COA, Layanan, Pengguna, Pelanggan, dan Komponen Gaji.</p>
                             </div>
                         </div>
                     </a>
@@ -96,7 +96,7 @@ $id_login = htmlspecialchars($_SESSION['id_pengguna']);
 
     <div class="card mb-4 shadow-lg border-secondary">
         <div class="card-header bg-secondary text-white fw-bold h5">
-            <span class="me-2">📈</span> 2. Pemrosesan Akuntansi & Laporan Keuangan
+            <span class="me-2">📈</span> Pemrosesan Akuntansi & Log Aktivitas Sistem
         </div>
         <div class="card-body">
             <div class="row row-cols-1 row-cols-md-3 g-4">
@@ -106,8 +106,8 @@ $id_login = htmlspecialchars($_SESSION['id_pengguna']);
                         <div class="card h-100 text-center shadow-sm hover-grow">
                             <div class="card-body">
                                 <h2 class="display-6 text-primary mb-2">💳</h2>
-                                <h5 class="card-title text-primary small">4. Pemrosesan Payroll</h5>
-                                <p class="card-text text-muted xsmall">Hitung dan Jurnalkan gaji bulanan karyawan.</p>
+                                <h5 class="card-title text-primary">Pemrosesan Payroll</h5>
+                                <p class="card-text text-muted small">Hitung dan Jurnalkan gaji bulanan karyawan.</p>
                             </div>
                         </div>
                     </a>
@@ -118,8 +118,8 @@ $id_login = htmlspecialchars($_SESSION['id_pengguna']);
                         <div class="card h-100 text-center shadow-sm hover-grow">
                             <div class="card-body">
                                 <h2 class="display-6 text-info mb-2">📘</h2>
-                                <h5 class="card-title text-info small">5. Jurnal Umum</h5>
-                                <p class="card-text text-muted xsmall">Lihat semua mutasi Debit/Kredit yang tercatat.</p>
+                                <h5 class="card-title text-info">Jurnal Umum</h5>
+                                <p class="card-text text-muted small">Lihat semua mutasi Debit/Kredit yang tercatat.</p>
                             </div>
                         </div>
                     </a>
@@ -130,8 +130,8 @@ $id_login = htmlspecialchars($_SESSION['id_pengguna']);
                         <div class="card h-100 text-center shadow-sm hover-grow">
                             <div class="card-body">
                                 <h2 class="display-6 text-warning mb-2">📚</h2>
-                                <h5 class="card-title text-warning small">6. Buku Besar (BB)</h5>
-                                <p class="card-text text-muted xsmall">Proses Posting & Lihat Saldo Akun.</p>
+                                <h5 class="card-title text-warning">Buku Besar (BB)</h5>
+                                <p class="card-text text-muted small">Proses Posting & Lihat Saldo Akun.</p>
                             </div>
                         </div>
                     </a>
@@ -142,8 +142,8 @@ $id_login = htmlspecialchars($_SESSION['id_pengguna']);
                         <div class="card h-100 text-center shadow-sm hover-grow border-success">
                             <div class="card-body">
                                 <h2 class="display-6 text-success mb-2">📊</h2>
-                                <h5 class="card-title text-success small">7. Laporan Laba Rugi</h5>
-                                <p class="card-text text-muted xsmall">Analisis pendapatan dan beban perusahaan.</p>
+                                <h5 class="card-title text-success ">Laporan Laba Rugi</h5>
+                                <p class="card-text text-muted small">Analisis pendapatan dan beban perusahaan.</p>
                             </div>
                         </div>
                     </a>
@@ -154,8 +154,8 @@ $id_login = htmlspecialchars($_SESSION['id_pengguna']);
                         <div class="card h-100 text-center shadow-sm hover-grow border-secondary">
                             <div class="card-body">
                                 <h2 class="display-6 text-secondary mb-2">📜</h2>
-                                <h5 class="card-title text-secondary small">8. Laporan Log Aktivitas</h5>
-                                <p class="card-text text-muted xsmall">Jejak audit dan pemantauan aktivitas pengguna.</p>
+                                <h5 class="card-title text-secondary">Laporan Log Aktivitas</h5>
+                                <p class="card-text text-muted small">Jejak audit dan pemantauan aktivitas pengguna.</p>
                             </div>
                         </div>
                     </a>
@@ -171,7 +171,7 @@ $id_login = htmlspecialchars($_SESSION['id_pengguna']);
     </div>
     
     <div class="mt-5 mb-5 text-center">
-        <a href="logout.php" class="btn btn-lg btn-outline-danger shadow">Logout dari Panel Owner</a>
+        <a href="logout.php" class="btn btn-lg btn-danger shadow">Logout</a>
     </div>
 
 </div>
