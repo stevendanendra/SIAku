@@ -11,9 +11,9 @@ if (!isset($_SESSION['role']) || $_SESSION['role'] !== 'Owner') {
 $error_message = $_SESSION['error_message'] ?? '';
 unset($_SESSION['error_message']);
 
-$nama_owner = htmlspecialchars($_SESSION['nama_lengkap'] ?? $_SESSION['username'] ?? 'Owner');
-$id_login = htmlspecialchars($_SESSION['id_pengguna'] ?? 'N/A');
-$role_login = htmlspecialchars($_SESSION['role'] ?? 'N/A');
+$nama_owner = htmlspecialchars($_SESSION['nama'] ?? $_SESSION['nama_lengkap'] ?? 'Owner');
+$role_login = htmlspecialchars($_SESSION['role']);
+$id_login = htmlspecialchars($_SESSION['id_pengguna']);
 ?>
 
 <?php include '_header.php'; // Header Bootstrap ?>
@@ -69,5 +69,9 @@ $role_login = htmlspecialchars($_SESSION['role'] ?? 'N/A');
 <script>
     document.getElementById('access-info').innerHTML = 'Akses: <?php echo $role_login; ?> (<?php echo $nama_owner; ?>, ID <?php echo $id_login; ?>)';
 </script>
+
+<input type="hidden" id="session-role" value="<?php echo $role_login; ?>">
+<input type="hidden" id="session-nama" value="<?php echo $nama_owner; ?>">
+<input type="hidden" id="session-id" value="<?php echo $id_login; ?>">
 
 <?php include '_footer.php'; // Footer Bootstrap ?>

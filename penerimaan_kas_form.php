@@ -182,9 +182,6 @@ $AKUN_PIUTANG = 1102;
         
     </form>
     
-    <hr class="my-4">
-    
-    <p class="text-muted small">Akses: Kasir (<?php echo $nama_karyawan; ?>, ID <?php echo $id_karyawan; ?>) | Akun Piutang: <?php echo $AKUN_PIUTANG; ?></p> 
 </div>
 
 <div class="modal fade" id="addCustomerModal" tabindex="-1" aria-labelledby="addCustomerModalLabel" aria-hidden="true">
@@ -431,5 +428,9 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('jml_bulan_cicilan').addEventListener('keyup', calculateDueDate);
 });
 </script>
+
+<input type="hidden" id="session-role" value="<?php echo $role_login; ?>">
+<input type="hidden" id="session-nama" value="<?php echo $nama_karyawan; ?>">
+<input type="hidden" id="session-id" value="<?php echo $id_karyawan; ?>">
 
 <?php include '_footer.php'; // Footer Bootstrap ?>

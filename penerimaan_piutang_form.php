@@ -18,6 +18,7 @@ unset($_SESSION['success_message']);
 
 $id_karyawan = $_SESSION['id_pengguna']; 
 $nama_karyawan = htmlspecialchars($_SESSION['nama'] ?? $_SESSION['nama_lengkap'] ?? 'Kasir');
+$role_login = htmlspecialchars($_SESSION['role']);
 
 // --- LOGIKA AMBIL DATA PIUTANG ---
 $AKUN_PIUTANG_USAHA = 1102; 
@@ -188,18 +189,15 @@ if ($sisa_piutang < $nominal_bayar_disarankan) {
             </div>
         </div>
     </div>
-    <div class="mt-4 d-flex justify-content-between">
-        <a href="daftar_piutang.php" class="btn btn-outline-secondary">← Kembali ke Daftar Piutang</a>
-        <a href='dashboard_karyawan.php' class="btn btn-outline-primary">Kembali ke Dashboard</a>
-    </div>
-    
-    <hr class="my-4">
-    <p class="text-muted small">Akses: Kasir (<?php echo $nama_karyawan; ?>, ID <?php echo $id_karyawan; ?>)</p> 
 
 </div>
 
 <script>
     document.getElementById('access-info').innerHTML = 'Akses: Karyawan (<?php echo $nama_karyawan; ?>, ID <?php echo $id_karyawan; ?>)';
 </script>
+
+<input type="hidden" id="session-role" value="<?php echo $role_login; ?>">
+<input type="hidden" id="session-nama" value="<?php echo $nama_karyawan; ?>">
+<input type="hidden" id="session-id" value="<?php echo $id_karyawan; ?>">
 
 <?php include '_footer.php'; // Footer Bootstrap ?>

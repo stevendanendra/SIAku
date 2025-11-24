@@ -14,7 +14,7 @@ $success_message = $_SESSION['success_message'] ?? '';
 unset($_SESSION['error_message']); 
 unset($_SESSION['success_message']);
 
-$nama_owner = htmlspecialchars($_SESSION['nama_lengkap'] ?? $_SESSION['username'] ?? 'Owner');
+$nama_owner = htmlspecialchars($_SESSION['nama'] ?? $_SESSION['nama_lengkap'] ?? 'Owner');
 $role_login = htmlspecialchars($_SESSION['role']);
 $id_login = htmlspecialchars($_SESSION['id_pengguna']);
 ?>
@@ -188,6 +188,10 @@ $id_login = htmlspecialchars($_SESSION['id_pengguna']);
     font-size: 0.75rem;
 }
 </style>
+
+<input type="hidden" id="session-role" value="<?php echo $role_login; ?>">
+<input type="hidden" id="session-nama" value="<?php echo $nama_owner; ?>">
+<input type="hidden" id="session-id" value="<?php echo $id_login; ?>">
 
 <script>
     document.addEventListener('DOMContentLoaded', () => {

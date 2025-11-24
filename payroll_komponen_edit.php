@@ -13,9 +13,9 @@ $error_message = '';
 $success_message = '';
 
 // --- INISIALISASI DATA LOGIN ---
-$role_login = htmlspecialchars($_SESSION['role'] ?? 'N/A');
-$nama_login = htmlspecialchars($_SESSION['nama_lengkap'] ?? $_SESSION['username'] ?? 'User');
-$id_login = htmlspecialchars($_SESSION['id_pengguna'] ?? 'N/A');
+$nama_owner = htmlspecialchars($_SESSION['nama'] ?? $_SESSION['nama_lengkap'] ?? 'Owner');
+$role_login = htmlspecialchars($_SESSION['role']);
+$id_login = htmlspecialchars($_SESSION['id_pengguna']);
 // --------------------------------------------------
 
 // --- DEFINISI MAPPING AKUN KHUSUS PAYROLL ---
@@ -211,5 +211,9 @@ $akun_info_current = mapPayrollAccount($data['id_akun_beban'], $data['is_liabili
     const id = '<?php echo $id_login; ?>';
     document.getElementById('access-info').innerHTML = `Akses: **${role}** (${nama}, ID ${id})`;
 </script>
+
+<input type="hidden" id="session-role" value="<?php echo $role_login; ?>">
+<input type="hidden" id="session-nama" value="<?php echo $nama_owner; ?>">
+<input type="hidden" id="session-id" value="<?php echo $id_login; ?>">
 
 <?php include '_footer.php'; // Footer Bootstrap ?>

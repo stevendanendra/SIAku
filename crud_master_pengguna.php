@@ -9,9 +9,9 @@ if (!isset($_SESSION['role']) || $_SESSION['role'] !== 'Owner') {
 }
 
 // --- INISIALISASI DATA LOGIN ---
-$role_login = htmlspecialchars($_SESSION['role'] ?? 'N/A');
-$nama_login = htmlspecialchars($_SESSION['nama_lengkap'] ?? $_SESSION['username'] ?? 'User');
-$id_login = htmlspecialchars($_SESSION['id_pengguna'] ?? 'N/A');
+$nama_owner = htmlspecialchars($_SESSION['nama'] ?? $_SESSION['nama_lengkap'] ?? 'Owner');
+$role_login = htmlspecialchars($_SESSION['role']);
+$id_login = htmlspecialchars($_SESSION['id_pengguna']);
 // --------------------------------------------------
 
 $error_message = '';
@@ -66,13 +66,7 @@ $pengguna_query = $conn->query("SELECT id_pengguna, username, email, password, n
     
     <h1 class="mb-4">Kelola Master Data Perusahaan</h1>
     
-    <div class="d-flex gap-3 mb-4 border-bottom pb-3"> 
-        <a href="crud_master_akun.php" class="btn btn-outline-dark btn-sm">📊 Master Akun (COA)</a>
-        <a href="crud_master_layanan.php" class="btn btn-outline-dark btn-sm">🧼 Master Layanan Jasa</a>
-        <a href="crud_master_pengguna.php" class="btn btn-dark btn-sm active">👤 Master Pengguna & Karyawan</a>
-        <a href="crud_master_pelanggan.php" class="btn btn-outline-dark btn-sm">👥 Master Pelanggan</a>
-        <a href="payroll_komponen.php" class="btn btn-outline-dark btn-sm">💵 Pengaturan Payroll</a>
-    </div>
+    <?php include 'navbar_master.php'; ?>
 
     <p><a href="dashboard_owner.php" class="btn btn-sm btn-outline-secondary">← Kembali ke Dashboard Owner</a></p>
     <hr>
@@ -239,4 +233,9 @@ $pengguna_query = $conn->query("SELECT id_pengguna, username, email, password, n
     
     document.getElementById('access-info').innerHTML = 'Akses: **<?php echo $role_login; ?>** (<?php echo $nama_login; ?>, ID <?php echo $id_login; ?>)';
 </script>
+
+<input type="hidden" id="session-role" value="<?php echo $role_login; ?>">
+<input type="hidden" id="session-nama" value="<?php echo $nama_owner; ?>">
+<input type="hidden" id="session-id" value="<?php echo $id_login; ?>">
+
 <?php include '_footer.php'; // Footer Bootstrap ?>

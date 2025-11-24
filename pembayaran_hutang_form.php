@@ -17,6 +17,10 @@ unset($_SESSION['error_message']);
 unset($_SESSION['success_message']);
 // ------------------------------------
 
+$nama_karyawan = htmlspecialchars($_SESSION['nama'] ?? $_SESSION['nama_lengkap'] ?? 'Kasir');
+$id_karyawan = $_SESSION['id_pengguna'];
+$role_login = htmlspecialchars($_SESSION['role']);
+
 // Re-Query data utang spesifik
 $sql_detail = "
     SELECT 
@@ -171,14 +175,14 @@ $id_login = htmlspecialchars($_SESSION['id_pengguna'] ?? 'N/A');
         </div>
     </div>
     
-    <div class="mt-4 d-flex justify-content-between">
-        <a href="daftar_utang.php" class="btn btn-outline-secondary">← Kembali ke Daftar Hutang</a>
-        <a href='dashboard_karyawan.php' class="btn btn-outline-primary">Kembali ke Dashboard</a>
-    </div>
 </div>
 
 <script>
     document.getElementById('access-info').innerHTML = 'Akses: <?php echo $role_login; ?> (<?php echo $nama_karyawan; ?>, ID <?php echo $id_login; ?>)';
 </script>
+
+<input type="hidden" id="session-role" value="<?php echo $role_login; ?>">
+<input type="hidden" id="session-nama" value="<?php echo $nama_karyawan; ?>">
+<input type="hidden" id="session-id" value="<?php echo $id_karyawan; ?>">
 
 <?php include '_footer.php'; // Footer Bootstrap ?>

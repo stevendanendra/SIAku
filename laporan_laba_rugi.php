@@ -9,9 +9,9 @@ if (!isset($_SESSION['role']) || $_SESSION['role'] !== 'Owner') {
 }
 
 // --- INISIALISASI DATA LOGIN ---
-$role_login = htmlspecialchars($_SESSION['role'] ?? 'N/A');
-$nama_login = htmlspecialchars($_SESSION['nama_lengkap'] ?? $_SESSION['username'] ?? 'Owner');
-$id_login = htmlspecialchars($_SESSION['id_pengguna'] ?? 'N/A');
+$nama_owner = htmlspecialchars($_SESSION['nama'] ?? $_SESSION['nama_lengkap'] ?? 'Owner');
+$role_login = htmlspecialchars($_SESSION['role']);
+$id_login = htmlspecialchars($_SESSION['id_pengguna']);
 
 // --- LOGIKA AMBIL SALDO FINAL ---
 $laba_rugi_query = $conn->query("
@@ -54,7 +54,6 @@ $laba_bersih_status = $laba_bersih >= 0 ? 'Laba Bersih' : 'Rugi Bersih';
 <div class="container mt-5">
 
     <h1 class="mb-4 d-print-none">6. Laporan Laba Rugi Perusahaan</h1>
-    <p class="text-muted d-print-none">Akses: **<?php echo $role_login; ?>** (<?php echo $nama_login; ?>, ID <?php echo $id_login; ?>)</p> 
     <p class="d-print-none"><a href="dashboard_owner.php" class="btn btn-sm btn-outline-secondary">← Kembali ke Dashboard Owner</a></p>
     <hr class="d-print-none">
 
@@ -155,5 +154,9 @@ $laba_bersih_status = $laba_bersih >= 0 ? 'Laba Bersih' : 'Rugi Bersih';
     
     document.getElementById('access-info').innerHTML = 'Akses: <?php echo $role_login; ?> (<?php echo $nama_login; ?>, ID <?php echo $id_login; ?>)';
 </script>
+
+<input type="hidden" id="session-role" value="<?php echo $role_login; ?>">
+<input type="hidden" id="session-nama" value="<?php echo $nama_owner; ?>">
+<input type="hidden" id="session-id" value="<?php echo $id_login; ?>">
 
 <?php include '_footer.php'; // Footer Bootstrap ?>

@@ -11,6 +11,10 @@ if (!isset($_SESSION['role']) || ($_SESSION['role'] !== 'Owner' && $_SESSION['ro
 $id_pelanggan = $conn->real_escape_string($_GET['id_pelanggan']);
 $AKUN_PIUTANG = 1102; 
 
+$nama_owner = htmlspecialchars($_SESSION['nama'] ?? $_SESSION['nama_lengkap'] ?? 'Owner');
+$role_login = htmlspecialchars($_SESSION['role']);
+$id_login = htmlspecialchars($_SESSION['id_pengguna']);
+
 // --- AMBIL DATA PELANGGAN DAN SALDO AWAL PIUTANG ---
 $pelanggan_q = $conn->query("SELECT nama_pelanggan FROM ms_pelanggan WHERE id_pelanggan = '$id_pelanggan'");
 $pelanggan_data = $pelanggan_q->fetch_assoc();
@@ -41,11 +45,6 @@ $mutasi_query = $conn->query($sql_mutasi);
 if (!$mutasi_query) {
     die("Error Database Query Mutasi: " . $conn->error);
 }
-
-// --- INISIALISASI DATA LOGIN ---
-$role_login = htmlspecialchars($_SESSION['role'] ?? 'N/A');
-$nama_login = htmlspecialchars($_SESSION['nama_lengkap'] ?? $_SESSION['username'] ?? 'User');
-$id_login = htmlspecialchars($_SESSION['id_pengguna'] ?? 'N/A');
 ?>
 
 <?php include '_header.php'; // Header Bootstrap ?>
@@ -130,7 +129,6 @@ $id_login = htmlspecialchars($_SESSION['id_pengguna'] ?? 'N/A');
     </div>
     
     <div class="mt-4 d-print-none">
-        <p class="text-muted small">Akses: <?php echo $role_login; ?> (<?php echo $nama_login; ?>, ID <?php echo $id_login; ?>)</p> 
         <a href="laporan_kartu_piutang.php?id_pelanggan=<?php echo $id_pelanggan; ?>" class="btn btn-info">Refresh Data</a>
     </div>
 
@@ -139,5 +137,9 @@ $id_login = htmlspecialchars($_SESSION['id_pengguna'] ?? 'N/A');
 <script>
     document.getElementById('access-info').innerHTML = 'Akses: <?php echo $role_login; ?> (<?php echo $nama_login; ?>, ID <?php echo $id_login; ?>)';
 </script>
+
+<input type="hidden" id="session-role" value="<?php echo $role_login; ?>">
+<input type="hidden" id="session-nama" value="<?php echo $nama_owner; ?>">
+<input type="hidden" id="session-id" value="<?php echo $id_login; ?>">
 
 <?php include '_footer.php'; // Footer Bootstrap ?>

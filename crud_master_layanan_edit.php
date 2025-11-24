@@ -13,9 +13,9 @@ $error_message = '';
 $success_message = '';
 
 // --- INISIALISASI DATA LOGIN ---
-$role_login = htmlspecialchars($_SESSION['role'] ?? 'N/A');
-$nama_login = htmlspecialchars($_SESSION['nama_lengkap'] ?? $_SESSION['username'] ?? 'User');
-$id_login = htmlspecialchars($_SESSION['id_pengguna'] ?? 'N/A');
+$nama_owner = htmlspecialchars($_SESSION['nama'] ?? $_SESSION['nama_lengkap'] ?? 'Owner');
+$role_login = htmlspecialchars($_SESSION['role']);
+$id_login = htmlspecialchars($_SESSION['id_pengguna']);
 // --------------------------------------------------
 
 // --- LOGIKA UPDATE DATA (UPDATE) ---
@@ -75,14 +75,6 @@ $akun_pendapatan_query = $conn->query("SELECT id_akun, nama_akun FROM ms_akun WH
     
     <h1 class="mb-4">Ubah Data Master Layanan Jasa</h1>
     
-    <!-- FIX UI: Navbar Navigasi Master Data yang Lebih Bersih -->
-    <div class="d-flex gap-3 mb-4 border-bottom pb-3"> 
-        <a href="crud_master_akun.php" class="btn btn-outline-dark btn-sm">📊 Master Akun (COA)</a>
-        <a href="crud_master_layanan.php" class="btn btn-dark btn-sm active">🧼 Master Layanan Jasa</a>
-        <a href="crud_master_pengguna.php" class="btn btn-outline-dark btn-sm">👤 Master Pengguna & Karyawan</a>
-        <a href="payroll_komponen.php" class="btn btn-outline-dark btn-sm">💵 Pengaturan Payroll</a>
-    </div>
-
     <p><a href="crud_master_layanan.php" class="btn btn-sm btn-outline-secondary">← Kembali ke Daftar Layanan</a></p>
     <hr>
 
@@ -166,5 +158,9 @@ $akun_pendapatan_query = $conn->query("SELECT id_akun, nama_akun FROM ms_akun WH
 <script>
     document.getElementById('access-info').innerHTML = 'Akses: <?php echo $role_login; ?> (<?php echo $nama_login; ?>, ID <?php echo $id_login; ?>)';
 </script>
+
+<input type="hidden" id="session-role" value="<?php echo $role_login; ?>">
+<input type="hidden" id="session-nama" value="<?php echo $nama_owner; ?>">
+<input type="hidden" id="session-id" value="<?php echo $id_login; ?>">
 
 <?php include '_footer.php'; // Footer Bootstrap ?>

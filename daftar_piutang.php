@@ -119,14 +119,15 @@ if (!$piutang_query) {
             </tbody>
         </table>
     </div>
-    
-    <hr>
-    <p class="text-muted small">Akses: <?php echo $role_login; ?> (<?php echo $nama_karyawan; ?>, ID <?php echo $id_karyawan; ?>)</p> 
 
 </div>
 
 <script>
     document.getElementById('access-info').innerHTML = 'Akses: <?php echo $role_login; ?> (<?php echo $nama_karyawan; ?>, ID <?php echo $id_karyawan; ?>)';
 </script>
+
+<input type="hidden" id="session-role" value="<?php echo $role_login; ?>">
+<input type="hidden" id="session-nama" value="<?php echo $nama_karyawan; ?>">
+<input type="hidden" id="session-id" value="<?php echo $id_karyawan; ?>">
 
 <?php include '_footer.php'; // Footer Bootstrap ?>

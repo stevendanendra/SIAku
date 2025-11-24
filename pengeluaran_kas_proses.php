@@ -23,6 +23,8 @@ $redirect_url = 'pengeluaran_kas_form.php';
 
 // Ambil dan sanitasi data input
 $id_karyawan = $_SESSION['id_pengguna'];
+$username = $_SESSION['nama'] ?? $_SESSION['username'] ?? 'Unknown';
+
 $deskripsi = $conn->real_escape_string($_POST['deskripsi'] ?? '');
 $id_akun_debit = $conn->real_escape_string($_POST['id_akun_debit'] ?? '');
 $jumlah = (int)($conn->real_escape_string($_POST['jumlah'] ?? 0));
@@ -52,6 +54,7 @@ $tgl_jatuh_tempo_db = "NULL";
 $jml_bulan_cicilan_db = "NULL"; 
 
 if ($metode_bayar == 'Tunai') {
+
     $id_akun_kredit = AKUN_KAS_ID; 
     $deskripsi_kredit_suffix = "Kas (Tunai) Berkurang";
 
@@ -143,10 +146,12 @@ try {
     // ----------------------------------------------------------------------------------
     // 6. LOG AKTIVITAS — BERHASIL
     // ----------------------------------------------------------------------------------
-    $aksi = "Transaksi Pengeluaran EXP-$id_pengeluaran_baru";
-    $status = "Berhasil ($metode_bayar)";
-    $log_sql = "INSERT INTO aktivitas_log (id_pengguna, aksi, status, waktu) 
-                VALUES ('$id_karyawan', '$aksi', '$status', NOW())";
+    $aksi = "Transaksi Pengeluaran EXP-$id_pengeluaran_baru berhasil ($metode_bayar)";
+
+    $log_sql = "INSERT INTO tr_log_aktivitas 
+                (tgl_waktu, id_pengguna, username, deskripsi, modul, ip_address)
+                VALUES (NOW(), '$id_karyawan', '$username', '$aksi', 'Pengeluaran Kas', '{$_SERVER['REMOTE_ADDR']}')";
+
     $conn->query($log_sql);
 
     $_SESSION['success_message'] = "Transaksi Pengeluaran **EXP-$id_pengeluaran_baru** berhasil dicatat ($metode_bayar) dan Jurnal Umum telah dibuat.";
@@ -157,10 +162,11 @@ try {
     $conn->rollback();
 
     // 8. LOG AKTIVITAS — GAGAL
-    $aksi = "Transaksi Pengeluaran (GAGAL)";
-    $status = $conn->real_escape_string($e->getMessage());
-    $log_sql = "INSERT INTO aktivitas_log (id_pengguna, aksi, status, waktu) 
-                VALUES ('$id_karyawan', '$aksi', '$status', NOW())";
+    $aksi = "Transaksi Pengeluaran (GAGAL): " . $e->getMessage();
+    
+    $log_sql = "INSERT INTO tr_log_aktivitas 
+                (tgl_waktu, id_pengguna, suername, deskripsi, modul, ip_address)
+                VALUES (NOW(), '$id_karyawan', '$username', '$aksi', 'Pengeluaran Kas', '{$_SERVER['REMOTE_ADDR']}')";
     $conn->query($log_sql);
 
     $_SESSION['error_message'] = "Transaksi Pengeluaran GAGAL diproses! Pesan Error: " . $e->getMessage();

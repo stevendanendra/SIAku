@@ -1,5 +1,5 @@
 <?php
-// crud_master_pelanggan.php
+// crud_master_supplier.php
 session_start();
 include 'koneksi.php'; 
 
@@ -14,21 +14,13 @@ $role_login = htmlspecialchars($_SESSION['role']);
 $id_login = htmlspecialchars($_SESSION['id_pengguna']);
 // --------------------------------------------------
 
-$error_message = '';
-$success_message = '';
-
-// --- LOGIKA PESAN DARI SESI (DELETE/EDIT/CREATE) ---
-if (isset($_SESSION['error_message'])) {
-    $error_message .= (empty($error_message) ? '' : '<br>') . $_SESSION['error_message'];
-    unset($_SESSION['error_message']);
-}
-if (isset($_SESSION['success_message'])) {
-    $success_message .= (empty($success_message) ? '' : '<br>') . $_SESSION['success_message'];
-    unset($_SESSION['success_message']);
-}
+$error_message = $_SESSION['error_message'] ?? '';
+$success_message = $_SESSION['success_message'] ?? '';
+unset($_SESSION['error_message']);
+unset($_SESSION['success_message']);
 
 // --- LOGIKA TAMPIL DATA (READ) ---
-$pelanggan_query = $conn->query("SELECT * FROM ms_pelanggan ORDER BY id_pelanggan ASC");
+$supplier_query = $conn->query("SELECT * FROM ms_supplier ORDER BY id_supplier ASC");
 ?>
 
 <?php include '_header.php'; // Header Bootstrap ?>
@@ -36,12 +28,12 @@ $pelanggan_query = $conn->query("SELECT * FROM ms_pelanggan ORDER BY id_pelangga
 <div class="container mt-5">
     <h1 class="mb-4">Kelola Master Data Perusahaan</h1>
     
-    <?php include 'navbar_master.php'; ?>
+  <?php include 'navbar_master.php'; ?>
 
     <p><a href="dashboard_owner.php" class="btn btn-sm btn-outline-secondary">← Kembali ke Dashboard Owner</a></p>
     <hr>
     
-    <h2>Kelola Pelanggan</h2>
+    <h2>Kelola Pemasok (Supplier)</h2>
 
     <?php if ($error_message) echo "<div class='alert alert-danger'>$error_message</div>"; ?>
     <?php if ($success_message) echo "<div class='alert alert-success'>$success_message</div>"; ?>
@@ -49,13 +41,13 @@ $pelanggan_query = $conn->query("SELECT * FROM ms_pelanggan ORDER BY id_pelangga
     <div class="row">
         <div class="col-md-4">
             <div class="card shadow-sm p-4 mb-4">
-                <h3 class="card-title h5">Tambah Pelanggan Baru</h3>
-                <form action="crud_master_pelanggan_proses.php" method="POST">
+                <h3 class="card-title h5">Tambah Supplier Baru</h3>
+                <form action="crud_master_supplier_proses.php" method="POST">
                     <input type="hidden" name="action" value="add">
                     
                     <div class="mb-3">
-                        <label for="nama_pelanggan" class="form-label">Nama Pelanggan:</label>
-                        <input type="text" class="form-control" name="nama_pelanggan" required>
+                        <label for="nama_supplier" class="form-label">Nama Pemasok:</label>
+                        <input type="text" class="form-control" name="nama_supplier" required>
                     </div>
                     
                     <div class="mb-3">
@@ -73,45 +65,43 @@ $pelanggan_query = $conn->query("SELECT * FROM ms_pelanggan ORDER BY id_pelangga
                         <input type="email" class="form-control" name="email">
                     </div>
                     
-                    <button type="submit" class="btn btn-success w-100">Simpan Pelanggan</button>
+                    <button type="submit" class="btn btn-success w-100">Simpan Pemasok</button>
                 </form>
             </div>
         </div>
 
         <div class="col-md-8">
-            <h3 class="mb-3 h5">Daftar Pelanggan Aktif</h3>
+            <h3 class="mb-3 h5">Daftar Pemasok Aktif</h3>
             <div class="table-responsive">
                 <table class="table table-bordered table-sm align-middle" style="min-width: 800px;">
                     <thead class="table-dark">
                         <tr>
                             <th style="width: 5%;">ID</th>
-                            <th style="width: 20%;">Nama Pelanggan</th>
+                            <th style="width: 20%;">Nama Pemasok</th>
                             <th style="width: 15%;">No. Telepon</th>
-                            <th style="width: 25%;">Alamat</th>
+                            <th style="width: 30%;">Alamat</th>
                             <th style="width: 15%;">Tgl. Daftar</th>
                             <th style="width: 15%;">Aksi</th>
                         </tr>
                     </thead>
                     <tbody>
-                        <?php while ($row = $pelanggan_query->fetch_assoc()): ?>
+                        <?php while ($row = $supplier_query->fetch_assoc()): ?>
                         <tr>
-                            <td><?php echo $row['id_pelanggan']; ?></td>
-                            <td><?php echo htmlspecialchars($row['nama_pelanggan']); ?></td>
+                            <td><?php echo $row['id_supplier']; ?></td>
+                            <td><?php echo htmlspecialchars($row['nama_supplier']); ?></td>
                             <td><?php echo htmlspecialchars($row['no_telepon'] ?? 'N/A'); ?></td>
                             <td><?php echo htmlspecialchars($row['alamat_lengkap'] ?? 'N/A'); ?></td>
                             <td><?php echo htmlspecialchars($row['tgl_daftar']); ?></td>
                             <td>
                                 <div class="d-flex gap-1">
-                                    <a href="laporan_kartu_piutang.php?id_pelanggan=<?php echo $row['id_pelanggan']; ?>" class="btn btn-sm btn-primary text-white" title="Lihat Riwayat Piutang">Piutang</a>
-                                    
-                                    <a href="crud_master_pelanggan_edit.php?id=<?php echo $row['id_pelanggan']; ?>" class="btn btn-sm btn-info text-white">Ubah</a>
+                                    <a href="crud_master_supplier_edit.php?id=<?php echo $row['id_supplier']; ?>" class="btn btn-sm btn-info text-white">Ubah</a>
                                     
                                     <a href="#" 
                                        class="btn btn-sm btn-danger" 
                                        data-bs-toggle="modal" 
-                                       data-bs-target="#confirmDeletePelangganModal" 
-                                       data-id="<?php echo $row['id_pelanggan']; ?>" 
-                                       data-nama="<?php echo htmlspecialchars($row['nama_pelanggan']); ?>">Hapus</a>
+                                       data-bs-target="#confirmDeleteSupplierModal" 
+                                       data-id="<?php echo $row['id_supplier']; ?>" 
+                                       data-nama="<?php echo htmlspecialchars($row['nama_supplier']); ?>">Hapus</a>
                                 </div>
                             </td>
                         </tr>
@@ -123,26 +113,26 @@ $pelanggan_query = $conn->query("SELECT * FROM ms_pelanggan ORDER BY id_pelangga
     </div>
 </div>
 
-<div class="modal fade" id="confirmDeletePelangganModal" tabindex="-1" aria-labelledby="confirmDeletePelangganModalLabel" aria-hidden="true">
+<div class="modal fade" id="confirmDeleteSupplierModal" tabindex="-1" aria-labelledby="confirmDeleteSupplierModalLabel" aria-hidden="true">
   <div class="modal-dialog">
     <div class="modal-content">
       <div class="modal-header bg-danger text-white">
-        <h5 class="modal-title" id="confirmDeletePelangganModalLabel">⚠️ Konfirmasi Penghapusan Pelanggan</h5>
+        <h5 class="modal-title" id="confirmDeleteSupplierModalLabel">⚠️ Konfirmasi Penghapusan Pemasok</h5>
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
       <div class="modal-body">
-        <p>Anda yakin ingin menghapus Pelanggan berikut? Tindakan ini tidak dapat dibatalkan!</p>
+        <p>Anda yakin ingin menghapus Pemasok berikut? Tindakan ini tidak dapat dibatalkan!</p>
         <p>
-            <strong>ID Pelanggan:</strong> <span id="modal-delete-pelanggan-id" class="fw-bold"></span><br>
-            <strong>Nama:</strong> <span id="modal-delete-pelanggan-nama" class="fst-italic"></span>
+            <strong>ID Pemasok:</strong> <span id="modal-delete-supplier-id" class="fw-bold"></span><br>
+            <strong>Nama:</strong> <span id="modal-delete-supplier-nama" class="fst-italic"></span>
         </p>
         <div class="alert alert-warning small" role="alert">
-            **PERINGATAN KRITIS:** Penghapusan akan GAGAL jika pelanggan ini memiliki riwayat piutang atau transaksi penjualan.
+            **PERINGATAN KRITIS:** Penghapusan akan GAGAL jika pemasok ini memiliki riwayat hutang (tercatat di `tr_pengeluaran`).
         </div>
       </div>
       <div class="modal-footer">
         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
-        <a href="#" id="delete-pelanggan-link" class="btn btn-danger">Ya, Hapus Pelanggan Permanen</a>
+        <a href="#" id="delete-supplier-link" class="btn btn-danger">Ya, Hapus Pemasok Permanen</a>
       </div>
     </div>
   </div>
@@ -150,22 +140,22 @@ $pelanggan_query = $conn->query("SELECT * FROM ms_pelanggan ORDER BY id_pelangga
 
 <script>
     // Script JS untuk mengisi data ID dan Nama ke dalam Modal
-    const deletePelangganModal = document.getElementById('confirmDeletePelangganModal');
+    const deleteSupplierModal = document.getElementById('confirmDeleteSupplierModal');
     
-    deletePelangganModal.addEventListener('show.bs.modal', function (event) {
+    deleteSupplierModal.addEventListener('show.bs.modal', function (event) {
         const button = event.relatedTarget; 
-        const idPelanggan = button.getAttribute('data-id');
-        const namaPelanggan = button.getAttribute('data-nama');
+        const idSupplier = button.getAttribute('data-id');
+        const namaSupplier = button.getAttribute('data-nama');
         
-        const modalIdSpan = deletePelangganModal.querySelector('#modal-delete-pelanggan-id');
-        const modalNamaSpan = deletePelangganModal.querySelector('#modal-delete-pelanggan-nama');
-        const deleteLink = deletePelangganModal.querySelector('#delete-pelanggan-link');
+        const modalIdSpan = deleteSupplierModal.querySelector('#modal-delete-supplier-id');
+        const modalNamaSpan = deleteSupplierModal.querySelector('#modal-delete-supplier-nama');
+        const deleteLink = deleteSupplierModal.querySelector('#delete-supplier-link');
         
-        modalIdSpan.textContent = idPelanggan;
-        modalNamaSpan.textContent = namaPelanggan;
+        modalIdSpan.textContent = idSupplier;
+        modalNamaSpan.textContent = namaSupplier;
         
-        // Set link Hapus Permanen yang menunjuk ke crud_master_pelanggan_delete.php
-        deleteLink.href = 'crud_master_pelanggan_delete.php?id=' + idPelanggan;
+        // Set link Hapus Permanen yang menunjuk ke crud_master_supplier_delete.php
+        deleteLink.href = 'crud_master_supplier_delete.php?id=' + idSupplier;
     });
     
     document.getElementById('access-info').innerHTML = 'Akses: <?php echo $role_login; ?> (<?php echo $nama_login; ?>, ID <?php echo $id_login; ?>)';

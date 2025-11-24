@@ -109,6 +109,10 @@ $role_login = htmlspecialchars($_SESSION['role']);
 }
 </style>
 
+<input type="hidden" id="session-role" value="<?php echo $role_login; ?>">
+<input type="hidden" id="session-nama" value="<?php echo $nama_karyawan; ?>">
+<input type="hidden" id="session-id" value="<?php echo $id_karyawan; ?>">
+
 <script>
     document.addEventListener('DOMContentLoaded', () => {
         const infoElement = document.getElementById('access-info');
