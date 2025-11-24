@@ -1,50 +1,51 @@
 <?php
-// kirim_email.php
-// Pastikan baris ini sesuai dengan lokasi folder vendor Anda
-require 'vendor/autoload.php'; 
-
 use PHPMailer\PHPMailer\PHPMailer;
 use PHPMailer\PHPMailer\Exception;
 
-function sendVerificationCode($recipientEmail, $code) {
-    
-    // --- KONFIGURASI SMTP ANDA (SUDAH DIISI) ---
-    $smtp_host = 'smtp.gmail.com'; 
-    $smtp_username = 'stevendanendra000@gmail.com'; // Email Pengirim
-    $smtp_password = 'pmqt bezy uqjb pvdv'; // App Password dari Gmail
-    $smtp_port = 587; 
+require 'vendor/autoload.php';
 
+function sendVerificationCode($email, $kode) {
     $mail = new PHPMailer(true);
-    
+
     try {
-        // Konfigurasi Server SMTP
+        // SMTP / Server pengirim
         $mail->isSMTP();
-        $mail->Host       = $smtp_host;
+        $mail->Host       = 'smtp.gmail.com';
         $mail->SMTPAuth   = true;
-        $mail->Username   = $smtp_username;
-        $mail->Password   = $smtp_password;
+        
+        // GANTI EMAILMU
+        $mail->Username   = 'stevendanendra000@gmail.com';
+
+        // GANTI APP PASSWORD 16 DIGIT (HARUS TANPA SPASI!)
+        // Contoh yang benar: pmqtbezyuqjbpvdv
+        $mail->Password   = 'pmqtbezyuqjbpvdv';
+
         $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
-        $mail->Port       = $smtp_port;
+        $mail->Port       = 587;
 
-        // Pengirim dan Penerima
-        $mail->setFrom($smtp_username, 'ShinyHome Support');
-        $mail->addAddress($recipientEmail);
+        // Set pengirim
+        $mail->setFrom('stevendanendra000@gmail.com', 'ShinyHome SIA');
 
-        // Isi Email
+        // Set penerima
+        $mail->addAddress($email);
+
+        // Email format
         $mail->isHTML(true);
-        $mail->Subject = 'Kode Verifikasi Reset Password ShinyHome';
-        $mail->Body    = "Halo,<br><br>Kode verifikasi Anda untuk reset password ShinyHome adalah: 
-                          <h1 style='color:#007bff;'>$code</h1><br>
-                          Kode ini berlaku untuk sekali pakai (hanya 3 menit).";
-        $mail->AltBody = "Kode verifikasi Anda adalah: $code";
+        $mail->Subject = 'Kode Reset Password Anda';
+        $mail->Body    = "
+            <h3>Kode Verifikasi Reset Password</h3>
+            <p>Kode verifikasi Anda adalah:</p>
+            <h2>$kode</h2>
+            <p>Kode ini berlaku selama <b>5 menit</b>.</p>
+        ";
+        $mail->AltBody = "Kode verifikasi Anda: $kode (berlaku 5 menit)";
 
+        // Kirim email
         $mail->send();
-        return true; // Berhasil
+        return true;
+
     } catch (Exception $e) {
-        // Log error di sini (optional)
-        // Jika gagal, pastikan App Password sudah benar dan 2FA aktif di akun Gmail Anda.
-        error_log("Mailer Error: {$mail->ErrorInfo}");
-        return false; // Gagal
+        error_log("Mailer Error: " . $e->getMessage());
+        return false;
     }
 }
-?>

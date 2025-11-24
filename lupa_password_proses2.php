@@ -1,5 +1,4 @@
 <?php
-// lupa_password_proses2.php
 session_start();
 include 'koneksi.php';
 
@@ -8,200 +7,213 @@ if (!isset($_SESSION['reset_email'])) {
     exit();
 }
 
-$email = $_SESSION['reset_email'];
-$step = ($_SERVER["REQUEST_METHOD"] == "POST") ? $_POST['step'] : 'input_code';
+$email = $conn->real_escape_string($_SESSION['reset_email']);
 
-$error = '';
-$success_alert = $_SESSION['success_alert'] ?? '';
-unset($_SESSION['success_alert']);
+// ==========================
+// LOGIKA VERIFIKASI KODE
+// ==========================
+if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST['kode'])) {
 
-if ($_SERVER["REQUEST_METHOD"] == "POST") {
+    $input_code = $_POST['kode'];
 
-    // LANGKAH 1 - Verifikasi kode
-    if ($step == 'verify_code') {
-
-        $input_code = $conn->real_escape_string($_POST['code']);
-
-        $sql_check_code = "
-            SELECT id_pengguna, kode_dibuat_pada 
-            FROM ms_pengguna 
-            WHERE email = '$email' AND kode_verifikasi = '$input_code'
-        ";
-
-        $result = $conn->query($sql_check_code);
-
-        if ($result->num_rows == 1) {
-
-            $data = $result->fetch_assoc();
-            $id_pengguna    = $data['id_pengguna'];
-            $waktu_dibuat   = strtotime($data['kode_dibuat_pada']);
-            $waktu_sekarang = time(); // <-- pastikan nama ini dipakai konsisten
-            $batas_waktu    = 180; // 3 menit
-
-            // Periksa kadaluarsa dengan variabel $waktu_sekarang (tanpa karakter tersembunyi)
-            if (($waktu_sekarang - $waktu_dibuat) > $batas_waktu) {
-
-                $error = "Kode verifikasi sudah kadaluarsa. Silakan ulangi proses reset.";
-
-                $conn->query("
-                    UPDATE ms_pengguna 
-                    SET kode_verifikasi = NULL, kode_dibuat_pada = NULL
-                    WHERE id_pengguna = '$id_pengguna'
-                ");
-
-                $step = 'input_code';
-
-            } else {
-                $step = 'input_new_password';
-            }
-
-        } else {
-            $error = "Kode verifikasi salah atau tidak ditemukan.";
-            $step = 'input_code';
-        }
+    // 0. Validasi: harus 6 digit angka
+    if (!preg_match('/^[0-9]{6}$/', $input_code)) {
+        $_SESSION['error_message'] = "Kode verifikasi harus 6 digit angka.";
+        header("Location: lupa_password_proses2.php");
+        exit();
     }
 
-    // LANGKAH 2 - Set password baru
-    elseif ($step == 'set_new_password') {
+    $sql = "SELECT id_pengguna, kode_verifikasi, kode_dibuat_pada
+            FROM ms_pengguna
+            WHERE email = '$email'";
 
-        $new_password     = $_POST['new_password'];
-        $confirm_password = $_POST['confirm_password'];
+    $result = $conn->query($sql);
 
-        if ($new_password !== $confirm_password) {
-            $error = "Konfirmasi password tidak cocok.";
-            $step = 'input_new_password';
+    if ($result->num_rows === 1) {
 
-        } elseif (strlen($new_password) < 4) {
-            $error = "Password minimal 4 karakter.";
-            $step = 'input_new_password';
+        $user = $result->fetch_assoc();
+        $hash = $user['kode_verifikasi'];
+        $created_at_raw = $user['kode_dibuat_pada'];
+        $created_at = strtotime($created_at_raw);
 
-        } else {
-
-            $hashed_password = $new_password; // plaintext untuk testing
-
-            $sql_update = "
-                UPDATE ms_pengguna 
-                SET password = '$hashed_password',
-                    kode_verifikasi = NULL,
-                    kode_dibuat_pada = NULL
-                WHERE email = '$email'
-            ";
-
-            if ($conn->query($sql_update)) {
-                session_unset();
-                session_destroy();
-                echo "<script>alert('Password berhasil diubah! Silakan login.'); window.location.href='login.html';</script>";
-                exit();
-            } else {
-                $error = "Gagal memperbarui password: " . $conn->error;
-                $step = 'input_new_password';
-            }
+        // 1. Jika kode_dibuat_pada NULL
+        if (!$created_at_raw || !$created_at) {
+            $_SESSION['error_message'] = "Kode tidak valid atau belum dibuat. Silakan minta ulang.";
+            header("Location: lupa_password_proses2.php");
+            exit();
         }
+
+        // 2. Expired setelah 180 detik (3 menit)
+        if (time() - $created_at > 180) {
+            $_SESSION['error_message'] = "Kode verifikasi telah kadaluarsa. Silakan minta kode baru.";
+            header("Location: lupa_password_proses2.php");
+            exit();
+        }
+
+        // 3. Cek hash
+        if (password_verify($input_code, $hash)) {
+            $_SESSION['verified_reset'] = true;
+            header("Location: reset_password.php");
+            exit();
+        } 
+        else {
+            $_SESSION['error_message'] = "Kode verifikasi salah.";
+        }
+    } 
+    else {
+        $_SESSION['error_message'] = "Terjadi kesalahan sistem, coba lagi.";
     }
+
+    header("Location: lupa_password_proses2.php");
+    exit();
 }
 ?>
 <!DOCTYPE html>
 <html lang="id">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Verifikasi & Reset Password - ShinyHome SIA</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-
-    <style>
-        body { 
-            background-color: #f4f7f6; 
-            display: flex; 
-            justify-content: center; 
-            align-items: center; 
-            min-height: 100vh; 
-            margin: 0;
-        }
-        .login-card { 
-            width: 100%; 
-            max-width: 400px; 
-            padding: 30px; 
-            box-shadow: 0 4px 10px rgba(0,0,0,0.1); 
-            border-radius: 8px; 
-            background-color: white;
-        }
-    </style>
+<meta charset="UTF-8">
+<title>Verifikasi Kode</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+<style>
+body {
+    font-family: 'Segoe UI', sans-serif;
+    background: linear-gradient(135deg, #e9f7f5, #c8f3ea);
+    margin: 0; padding: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+}
+.card {
+    background: white;
+    padding: 30px;
+    border-radius: 12px;
+    width: 400px;
+    box-shadow: 0 8px 20px rgba(0,0,0,0.08);
+}
+h2 {
+    text-align: center;
+    margin-bottom: 20px;
+    color: #16a085;
+    font-weight: 700;
+}
+.code-input {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 20px;
+}
+.code-input input {
+    width: 48px;
+    height: 55px;
+    font-size: 24px;
+    text-align: center;
+    border: 1px solid #CCC;
+    border-radius: 8px;
+}
+.btn-main {
+    width: 100%;
+    padding: 12px;
+    background: #1abc9c;
+    border: none;
+    border-radius: 6px;
+    color: white;
+    font-size: 16px;
+    margin-bottom: 10px;
+}
+.btn-main:hover { background: #17a589; }
+.btn-secondary { background: #6c757d; width: 100%; }
+.btn-secondary:disabled { background: #999; }
+.count-text { text-align: center; margin-top: 15px; font-size: 14px; }
+</style>
 </head>
 <body>
 
-<div class="login-card">
+<div class="card">
 
-    <h2 class="text-center mb-4" style="color: #1abc9c;">Verifikasi & Reset Password</h2>
+    <h2>Verifikasi Kode</h2>
 
-    <?php if (!empty($error)): ?>
-        <div class="alert alert-danger"><?= htmlspecialchars($error) ?></div>
+    <?php if(isset($_SESSION['error_message'])): ?>
+        <div class="alert alert-danger text-center">
+            <?= $_SESSION['error_message']; unset($_SESSION['error_message']); ?>
+        </div>
     <?php endif; ?>
 
-    <?php if (!empty($success_alert)): ?>
-        <div class="alert alert-success"><?= htmlspecialchars($success_alert) ?></div>
-    <?php endif; ?>
+    <!-- FORM VERIFIKASI KODE -->
+    <form method="POST" id="verifyForm">
+        <div class="code-input">
+            <?php for ($i = 1; $i <= 6; $i++): ?>
+                <input type="text" maxlength="1" class="code-box" id="code<?= $i ?>" required>
+            <?php endfor; ?>
+        </div>
+        <input type="hidden" name="kode" id="finalKode">
+        <button class="btn-main">Verifikasi</button>
+    </form>
 
+    <p class="text-center mt-3">
+        Kode kadaluarsa dalam <b><span id="expireCountdown">03:00</span></b>
+    </p>
 
-    <!-- === STEP 1: INPUT KODE === -->
-    <?php if ($step == 'input_code'): ?>
-
-        <p class="text-center text-muted">Kode verifikasi telah dikirim ke:</p>
-        <p class="text-center fw-bold"><?= htmlspecialchars($email) ?></p>
-
-        <p class="text-center text-danger">
-            Kode hanya berlaku <b>3 menit</b>.
-        </p>
-
-        <form action="lupa_password_proses2.php" method="POST">
-            <input type="hidden" name="step" value="verify_code">
-
-            <div class="mb-3">
-                <label class="form-label">Kode Verifikasi (6 digit)</label>
-                <input type="text" name="code" maxlength="6" class="form-control text-center fs-4 fw-bold"
-                       required inputmode="numeric">
-            </div>
-
-            <button type="submit" class="btn w-100 mb-3"
-                    style="background-color: #1abc9c; border: none; color: white;">
-                Verifikasi Kode
-            </button>
-        </form>
-
-
-    <!-- === STEP 2: PASSWORD BARU === -->
-    <?php elseif ($step == 'input_new_password'): ?>
-
-        <p class="text-center text-success fw-bold">Kode berhasil diverifikasi. Masukkan password baru Anda.</p>
-
-        <form action="lupa_password_proses2.php" method="POST">
-            <input type="hidden" name="step" value="set_new_password">
-
-            <div class="mb-3">
-                <label class="form-label">Password Baru</label>
-                <input type="password" name="new_password" class="form-control" required minlength="4">
-            </div>
-
-            <div class="mb-3">
-                <label class="form-label">Konfirmasi Password</label>
-                <input type="password" name="confirm_password" class="form-control" required>
-            </div>
-
-            <button type="submit" class="btn w-100 mb-3"
-                    style="background-color: #1abc9c; border: none; color: white;">
-                Set Password Baru
-            </button>
-        </form>
-
-    <?php endif; ?>
-
-
-    <div class="text-center mt-2">
-        <a href="login.html" class="text-muted">← Kembali ke Login</a>
-    </div>
+    <!-- RESEND BUTTON -->
+    <form action="lupa_password_proses1.php" method="POST">
+        <input type="hidden" name="email" value="<?= $email ?>">
+        <input type="hidden" name="from_resend" value="1">
+        <button id="resendBtn" class="btn btn-secondary" disabled>
+            Kirim Ulang Kode (60s)
+        </button>
+    </form>
 
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+// ========================
+// INPUT AUTO-MOVE
+// ========================
+const boxes = document.querySelectorAll('.code-box');
+boxes.forEach((box, idx) => {
+    box.addEventListener('input', () => {
+        if (box.value.length === 1 && idx < 5) boxes[idx + 1].focus();
+    });
+    box.addEventListener('keydown', (e) => {
+        if (e.key === 'Backspace' && box.value === '' && idx > 0) boxes[idx - 1].focus();
+    });
+});
+
+// Gabungkan kode sebelum submit
+document.getElementById('verifyForm').addEventListener('submit', () => {
+    let code = '';
+    boxes.forEach(b => code += b.value);
+    document.getElementById('finalKode').value = code;
+});
+
+// ========================
+// COUNTDOWN EXPIRED 180s
+// ========================
+let expire = 180;
+let expireTimer = setInterval(() => {
+    let m = String(Math.floor(expire / 60)).padStart(2, '0');
+    let s = String(expire % 60).padStart(2, '0');
+    document.getElementById("expireCountdown").textContent = `${m}:${s}`;
+    expire--;
+    if (expire < 0) clearInterval(expireTimer);
+}, 1000);
+
+// ========================
+// RESEND COUNTDOWN 60s
+// ========================
+let resend = 60;
+let resendBtn = document.getElementById('resendBtn');
+
+let resendTimer = setInterval(() => {
+    resend--;
+    resendBtn.textContent = `Kirim Ulang Kode (${resend}s)`;
+    if (resend <= 0) {
+        resendBtn.disabled = false;
+        resendBtn.textContent = 'Kirim Ulang Kode';
+        clearInterval(resendTimer);
+    }
+}, 1000);
+</script>
 
 </body>
 </html>
