@@ -1,5 +1,5 @@
 <?php
-// payroll_proses_form.php
+// payroll_proses_form.php (revisi — identifikasi Gaji Pokok tanpa hardcode 5101)
 session_start(); // HARUS DITEMPATKAN PALING ATAS
 include 'koneksi.php'; 
 
@@ -26,6 +26,22 @@ $periode = '';
 // --- AKUN BARU YANG DIBUTUHKAN UNTUK JURNAL ---
 $AKUN_PENDAPATAN_LAIN = 4200; 
 
+// Helper: apakah nama komponen adalah Gaji Pokok?
+function isGajiPokokName(string $nama): bool {
+    return stripos($nama, 'gaji pokok') !== false;
+}
+
+// Helper: ambil role dari nama 'Gaji Pokok - RoleName' jika ada
+function extractRoleFromGajiPokokName(string $nama): ?string {
+    // cari pola: Gaji Pokok - <role>
+    $parts = preg_split('/-/', $nama, 2);
+    if (count($parts) === 2) {
+        $role = trim($parts[1]);
+        return $role !== '' ? $role : null;
+    }
+    return null;
+}
+
 if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action']) && $_POST['action'] == 'preview') {
     
     $periode_gaji = $conn->real_escape_string($_POST['periode_gaji']);
@@ -39,21 +55,24 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action']) && $_POST['a
     $komponen_gaji = []; 
     $komponen_sudah_dihitung = []; 
     $gaji_pokok_by_role = []; 
+    $global_gaji_pokok = null; // fallback jika ada Gaji Pokok umum
 
     while ($k = $komponen_q->fetch_assoc()) {
         $komponen_gaji_master[] = $k; 
         $komponen_gaji[$k['nama_komponen']] = $k; 
 
-        // Identifikasi Gaji Pokok berdasarkan Akun 5101
-        if ($k['id_akun_beban'] == 5101) {
-            if (preg_match('/Gaji Pokok - (.+)/i', $k['nama_komponen'], $matches)) {
-                $role_identifier = trim($matches[1]);
-                if (strpos($role_identifier, '(') !== false) {
-                    $role_name = trim(strstr($role_identifier, '(', true));
-                } else {
-                    $role_name = $role_identifier;
+        // Identifikasi Gaji Pokok berdasarkan NAMA komponen (bukan id_akun)
+        if (isGajiPokokName($k['nama_komponen'])) {
+            // cek apakah ada role spesifik di nama
+            $role_from_name = extractRoleFromGajiPokokName($k['nama_komponen']);
+            if ($role_from_name !== null) {
+                // simpan mapping ke role spesifik
+                $gaji_pokok_by_role[$role_from_name] = $k['nilai_default'];
+            } else {
+                // simpan sebagai fallback umum (ambil pertama jika ada banyak)
+                if ($global_gaji_pokok === null) {
+                    $global_gaji_pokok = $k['nilai_default'];
                 }
-                $gaji_pokok_by_role[$role_name] = $k['nilai_default'];
             }
         }
     }
@@ -90,10 +109,10 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action']) && $_POST['a
     $pegawai_q = $conn->query("SELECT id_pengguna, nama_lengkap, role, is_menikah, jumlah_anak FROM ms_pengguna 
                                  WHERE role != 'Owner' AND is_aktif = TRUE ORDER BY id_pengguna ASC"); 
     $total_pegawai_digaji = $pegawai_q->num_rows;
-    $bonus_per_pegawai = ($total_alokasi_bonus > 0) ? floor($total_alokasi_bonus / $total_pegawai_digaji) : 0;
+    $bonus_per_pegawai = ($total_alokasi_bonus > 0 && $total_pegawai_digaji > 0) ? floor($total_alokasi_bonus / $total_pegawai_digaji) : 0;
     
     // Hitung Sisa Bonus
-    $total_bonus_dibagikan = $bonus_per_pegawai * $total_pegawai_digaji;
+    $total_bonus_dibagikan = $bonus_per_pegawai * max(0, $total_pegawai_digaji);
     $sisa_bonus = $total_alokasi_bonus - $total_bonus_dibagikan;
 
     // --- Konstanta PTKP Simulasi (Bulanan) ---
@@ -141,6 +160,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action']) && $_POST['a
     }
 
     $pegawai_q->data_seek(0); 
+    $missing_roles = []; // kumpulan role yang tidak punya gaji pokok sama sekali
+
     while ($pegawai = $pegawai_q->fetch_assoc()) {
         $role = $pegawai['role'];
         $rinci_penambah = [];
@@ -148,14 +169,21 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action']) && $_POST['a
         $gaji_kotor_pph = 0; 
 
         // A. PENAMBAH - Gaji Pokok (DINAMIS BERDASARKAN ROLE)
-        $gaji_pokok = $gaji_pokok_by_role[$role] ?? 0; 
+        $gaji_pokok = $gaji_pokok_by_role[$role] ?? null;
         
-        if ($gaji_pokok == 0) {
-             $error_message = "Gagal: Gaji Pokok untuk Role '{$role}' belum diatur di Master Komponen (Akun 5101).";
-             goto end_of_post;
+        // Jika tidak ada mapping role-spesifik, gunakan fallback global jika ada
+        if (($gaji_pokok === null || $gaji_pokok == 0) && $global_gaji_pokok !== null) {
+            $gaji_pokok = $global_gaji_pokok;
         }
 
-        $rinci_penambah['Gaji Pokok'] = $gaji_pokok; 
+        if (empty($gaji_pokok) && $gaji_pokok !== 0) {
+            // TIDAK ada nilai gaji pokok untuk role ini dan tidak ada fallback global
+            $missing_roles[] = $role;
+            // skip computing this pegawai agar preview tetap berlanjut untuk yg lain
+            continue;
+        }
+
+        $rinci_penambah['Gaji Pokok'] = (int)$gaji_pokok; 
         
         // Tunjangan Istri
         $tunj_istri = 0;
@@ -207,8 +235,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action']) && $_POST['a
         foreach ($komponen_gaji_master as $k) {
             $k_nama = $k['nama_komponen'];
             
-            // Lompati komponen Gaji Pokok (akun 5101) dan komponen hardcoded lainnya
-            if ($k['id_akun_beban'] == 5101 || isset($komponen_sudah_dihitung[$k_nama])) {
+            // Lompati Gaji Pokok yang sudah ditangani (berdasarkan nama), dan komponen yang sudah dihitung
+            if (isGajiPokokName($k_nama) || isset($komponen_sudah_dihitung[$k_nama])) {
                 continue;
             }
             
@@ -216,7 +244,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action']) && $_POST['a
             
             if ($k['tipe'] == 'Penambah') {
                 $rinci_penambah[$k_nama] = $nilai_komp;
-            } else { // Tipe Pengurang (5103 atau 2102)
+            } else { // Tipe Pengurang (kewajiban atau pengurang)
                 $rinci_pengurang[$k_nama] = $nilai_komp;
             }
         }
@@ -264,6 +292,13 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action']) && $_POST['a
         ];
     }
     
+    // Jika ada role yang tidak punya Gaji Pokok spesifik dan tidak ada fallback global: beri pesan jelas
+    if (!empty($missing_roles)) {
+        $missing_roles = array_unique($missing_roles);
+        $error_message = "Gagal: Gaji Pokok untuk Role(s) '" . implode("', '", $missing_roles) . "' belum diatur di Master Komponen (nama komponen yang mengandung 'Gaji Pokok').\n";
+        $error_message .= "Solusi: Tambahkan komponen dengan nama 'Gaji Pokok - <RoleName>' atau tambahkan satu komponen 'Gaji Pokok' sebagai nilai fallback.";
+    }
+
     end_of_post:
 
 }
@@ -418,7 +453,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action']) && $_POST['a
 </div>
 
 <script>
-    document.getElementById('access-info').innerHTML = 'Akses: <?php echo $role_login; ?> (<?php echo $nama_login; ?>, ID <?php echo $id_login; ?>)';
+    document.getElementById('access-info').innerHTML = 'Akses: <?php echo $role_login; ?> (<?php echo $nama_owner; ?>, ID <?php echo $id_login; ?>)';
 </script>
 
 <input type="hidden" id="session-role" value="<?php echo $role_login; ?>">

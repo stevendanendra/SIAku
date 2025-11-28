@@ -1,145 +1,244 @@
 <?php
-// laporan_kartu_piutang.php
 session_start();
-include 'koneksi.php'; 
+include 'koneksi.php';
 
-if (!isset($_SESSION['role']) || ($_SESSION['role'] !== 'Owner' && $_SESSION['role'] !== 'Karyawan') || !isset($_GET['id_pelanggan'])) { 
-    header("Location: login.html"); 
-    exit(); 
+if (!isset($_SESSION['role']) || $_SESSION['role'] !== 'Owner') {
+    header("Location: login.html");
+    exit();
 }
 
-$id_pelanggan = $conn->real_escape_string($_GET['id_pelanggan']);
-$AKUN_PIUTANG = 1102; 
+$AKUN_PIUTANG = 1102;
 
-$nama_owner = htmlspecialchars($_SESSION['nama'] ?? $_SESSION['nama_lengkap'] ?? 'Owner');
-$role_login = htmlspecialchars($_SESSION['role']);
-$id_login = htmlspecialchars($_SESSION['id_pengguna']);
+// ==============================
+// AMBIL DAFTAR PELANGGAN
+// ==============================
+$pelanggan_q = $conn->query("
+    SELECT id_pelanggan, nama_pelanggan
+    FROM ms_pelanggan
+    ORDER BY nama_pelanggan ASC
+");
 
-// --- AMBIL DATA PELANGGAN DAN SALDO AWAL PIUTANG ---
-$pelanggan_q = $conn->query("SELECT nama_pelanggan FROM ms_pelanggan WHERE id_pelanggan = '$id_pelanggan'");
-$pelanggan_data = $pelanggan_q->fetch_assoc();
-$nama_pelanggan = htmlspecialchars($pelanggan_data['nama_pelanggan'] ?? 'Pelanggan Tidak Ditemukan');
+$id_pelanggan = isset($_GET['pelanggan']) && $_GET['pelanggan'] !== ''
+    ? $conn->real_escape_string($_GET['pelanggan'])
+    : '';
 
-$saldo_awal_piutang = 0; // Asumsi saldo awal piutang per pelanggan dihitung melalui BB
-$saldo_normal_piutang = 'D'; // Piutang adalah Aktiva, Saldo Normal Debit
+$ledger = [];
+$nama_pelanggan = "";
 
-// --- AMBIL SEMUA MUTASI PIUTANG (DEBIT & KREDIT) ---
-$sql_mutasi = "
-    SELECT 
-        j.tgl_jurnal, 
-        j.no_bukti, 
-        j.deskripsi,
-        j.posisi, 
-        j.nilai
-    FROM tr_jurnal_umum j
-    -- Gabungkan dengan tr_penjualan untuk mendapatkan semua transaksi yang terkait
-    JOIN tr_penjualan t ON j.no_bukti = CONCAT('PJL-', t.id_penjualan) OR j.no_bukti LIKE CONCAT('RCV-', t.id_penjualan, '-%')
-    WHERE 
-        j.id_akun = {$AKUN_PIUTANG} 
-        AND t.id_pelanggan = '$id_pelanggan'
-    ORDER BY j.tgl_jurnal ASC, j.id_jurnal ASC
-";
+// ==========================================================
+// MODE : PELANGGAN DIPILIH → TAMPILKAN KARTU PIUTANG DETAIL
+// ==========================================================
+if (!empty($id_pelanggan)) {
 
-$mutasi_query = $conn->query($sql_mutasi);
+    // Nama pelanggan
+    $p = $conn->query("SELECT nama_pelanggan FROM ms_pelanggan WHERE id_pelanggan='$id_pelanggan' LIMIT 1");
+    if ($p && $p->num_rows) {
+        $nama_pelanggan = $p->fetch_assoc()['nama_pelanggan'];
+    }
 
-if (!$mutasi_query) {
-    die("Error Database Query Mutasi: " . $conn->error);
+    // AMBIL SEMUA MUTASI PIUTANG LANGSUNG DARI JURNAL
+    $sql = "
+        SELECT 
+            j.tgl_jurnal,
+            j.no_bukti,
+            j.deskripsi,
+            j.posisi,
+            j.nilai
+        FROM tr_jurnal_umum j
+
+        JOIN tr_penjualan p 
+              ON j.no_bukti LIKE CONCAT('PJL-', p.id_penjualan, '%')
+              OR  j.no_bukti LIKE CONCAT('RCV-', p.id_penjualan, '%')
+
+        WHERE j.id_akun = {$AKUN_PIUTANG}
+          AND p.id_pelanggan = '{$id_pelanggan}'
+          AND p.metode_bayar = 'Cicilan'
+
+        ORDER BY j.tgl_jurnal ASC, j.id_jurnal ASC
+    ";
+
+    $rows = $conn->query($sql);
+
+    while ($r = $rows->fetch_assoc()) {
+
+        // LABEL OTOMATIS
+        if ($r['posisi'] === 'D') {
+            $ket = "Penjualan Cicilan (Piutang Bertambah)";
+        } else {
+            $ket = "Pembayaran Cicilan (Piutang Berkurang)";
+        }
+
+        $ledger[] = [
+            'tanggal'   => $r['tgl_jurnal'],
+            'no_bukti'  => $r['no_bukti'],
+            'keterangan'=> $ket,
+            'debit'     => $r['posisi'] === 'D' ? (int)$r['nilai'] : 0,
+            'kredit'    => $r['posisi'] === 'K' ? (int)$r['nilai'] : 0
+        ];
+    }
 }
+
+// ==========================================================
+// MODE : DEFAULT (TAMPIL SEMUA PIUTANG BELUM LUNAS)
+// ==========================================================
+$default_piutang = [];
+
+if (empty($id_pelanggan)) {
+
+    $sql = "
+        SELECT 
+            p.id_penjualan,
+            p.tgl_transaksi,
+            p.id_pelanggan,
+            c.nama_pelanggan,
+
+            -- total piutang (debit)
+            (
+                SELECT COALESCE(SUM(j.nilai),0)
+                FROM tr_jurnal_umum j
+                WHERE j.id_akun = {$AKUN_PIUTANG}
+                  AND j.posisi='D'
+                  AND j.no_bukti LIKE CONCAT('PJL-', p.id_penjualan, '%')
+            ) AS total_tagihan,
+
+            -- total pembayaran (kredit)
+            (
+                SELECT COALESCE(SUM(j.nilai),0)
+                FROM tr_jurnal_umum j
+                WHERE j.id_akun = {$AKUN_PIUTANG}
+                  AND j.posisi='K'
+                  AND j.no_bukti LIKE CONCAT('RCV-', p.id_penjualan, '%')
+            ) AS sudah_bayar
+
+        FROM tr_penjualan p
+        LEFT JOIN ms_pelanggan c ON p.id_pelanggan = c.id_pelanggan
+        WHERE p.metode_bayar='Cicilan'
+
+        HAVING total_tagihan > sudah_bayar
+        ORDER BY p.tgl_transaksi ASC
+    ";
+
+    $q = $conn->query($sql);
+
+    while ($r = $q->fetch_assoc()) {
+        $r['sisa'] = $r['total_tagihan'] - $r['sudah_bayar'];
+        $default_piutang[] = $r;
+    }
+}
+
+include '_header.php';
 ?>
 
-<?php include '_header.php'; // Header Bootstrap ?>
-
 <div class="container mt-5">
-    
-    <p><a href='crud_master_pelanggan.php' class="btn btn-sm btn-outline-secondary">← Kembali ke Master Pelanggan</a></p>
-    <h1 class="mb-4 display-6 text-primary">Kartu Piutang Pelanggan</h1>
+    <h1 class="mb-3">Laporan Kartu Piutang Pelanggan</h1>
+    <p><a href="dashboard_owner.php" class="btn btn-sm btn-outline-secondary">← Kembali ke Dashboard Owner</a></p>
     <hr>
-    
-    <div class="card shadow-lg p-4 mb-4">
-        <h2 class="h5 mb-3">Detail Pelanggan: **<?php echo $nama_pelanggan; ?>** (ID: <?php echo $id_pelanggan; ?>)</h2>
-        <div class="alert alert-info small">
-            Akun Piutang: **<?php echo $AKUN_PIUTANG; ?>** | Saldo Normal: **Debit** | Saldo Awal: **Rp <?php echo number_format($saldo_awal_piutang, 0, ',', '.'); ?>**
+
+    <!-- FILTER -->
+    <form class="row g-3 mb-4" method="GET">
+        <div class="col-md-6">
+            <label class="form-label">Pilih Pelanggan</label>
+            <select name="pelanggan" class="form-select select2">
+                <option value="">-- Semua Pelanggan --</option>
+                <?php 
+                $pelanggan_q->data_seek(0);
+                while ($p = $pelanggan_q->fetch_assoc()):
+                ?>
+                    <option value="<?= $p['id_pelanggan']; ?>"
+                        <?= ($p['id_pelanggan']==$id_pelanggan?'selected':''); ?>>
+                        <?= htmlspecialchars($p['nama_pelanggan']); ?>
+                    </option>
+                <?php endwhile; ?>
+            </select>
         </div>
 
+        <div class="col-md-2">
+            <button class="btn btn-primary w-100">Tampilkan</button>
+        </div>
+    </form>
+
+    <?php if (empty($id_pelanggan)): ?>
+
+        <h4>Daftar Piutang Belum Lunas</h4>
         <div class="table-responsive">
-            <table class="table table-bordered table-sm align-middle">
+            <table class="table table-bordered table-sm">
                 <thead class="table-dark">
-                    <tr>
-                        <th style="width: 10%;">Tanggal</th>
-                        <th style="width: 15%;">No. Bukti</th>
-                        <th>Keterangan</th>
-                        <th class="text-end" style="width: 15%;">Debit (Penjualan)</th>
-                        <th class="text-end" style="width: 15%;">Kredit (Pelunasan)</th>
-                        <th class="text-end bg-warning text-dark" style="width: 15%;">Saldo Akhir</th>
-                    </tr>
+                <tr>
+                    <th>ID</th>
+                    <th>Pelanggan</th>
+                    <th class="text-end">Total</th>
+                    <th class="text-end">Sudah Dibayar</th>
+                    <th class="text-end">Sisa</th>
+                </tr>
                 </thead>
+
                 <tbody>
-                    <?php 
-                    $saldo_akhir = $saldo_awal_piutang;
-                    $saldo_akhir_display = abs($saldo_akhir);
-                    
-                    // Tampilkan Saldo Awal (jika tidak nol)
-                    if ($saldo_awal_piutang != 0): ?>
-                    <tr>
-                        <td></td>
-                        <td></td>
-                        <td>SALDO AWAL</td>
-                        <td class="text-end"></td>
-                        <td class="text-end"></td>
-                        <td class="text-end bg-warning text-dark fw-bold">Rp <?php echo number_format($saldo_akhir_display, 0, ',', '.'); ?></td>
-                    </tr>
-                    <?php endif; ?>
-
-                    <?php while ($row = $mutasi_query->fetch_assoc()): 
-                        $nilai = $row['nilai'];
-                        $posisi = $row['posisi'];
-                        
-                        $nilai_debit = ($posisi === 'D') ? $nilai : 0;
-                        $nilai_kredit = ($posisi === 'K') ? $nilai : 0;
-                        
-                        // Hitung Saldo Akhir (Piutang: Debit menambah, Kredit mengurangi)
-                        $saldo_akhir = $saldo_akhir + $nilai_debit - $nilai_kredit; 
-                        
-                        // Tampilan Saldo Akhir Mutlak dan Posisi
-                        $saldo_akhir_display = abs($saldo_akhir);
-                        $saldo_posisi_class = $saldo_akhir < 0 ? 'text-danger' : 'text-dark'; // Biasanya Piutang tidak boleh Kredit
-
-                        // Tentukan Deskripsi Jurnal
-                        $keterangan_display = htmlspecialchars($row['deskripsi']);
-                        if (strpos($row['no_bukti'], 'PJL-') === 0 && $posisi === 'D') {
-                            $keterangan_display = "Penjualan Kredit/Termin (ID Transaksi: " . substr($row['no_bukti'], 4) . ")";
-                        } elseif ($posisi === 'K') {
-                            $keterangan_display = "Pelunasan Piutang";
-                        }
-                    ?>
-                    <tr>
-                        <td><?php echo $row['tgl_jurnal']; ?></td>
-                        <td><?php echo htmlspecialchars($row['no_bukti']); ?></td>
-                        <td><?php echo $keterangan_display; ?></td>
-                        <td class="text-end text-primary"><?php echo $nilai_debit > 0 ? number_format($nilai_debit, 0, ',', '.') : ''; ?></td>
-                        <td class="text-end text-danger"><?php echo $nilai_kredit > 0 ? number_format($nilai_kredit, 0, ',', '.') : ''; ?></td>
-                        <td class="text-end bg-warning-subtle fw-bold <?php echo $saldo_posisi_class; ?>">
-                            Rp <?php echo number_format($saldo_akhir_display, 0, ',', '.'); ?>
-                        </td>
-                    </tr>
-                    <?php endwhile; ?>
+                <?php if (count($default_piutang)): ?>
+                    <?php foreach ($default_piutang as $r): ?>
+                        <tr>
+                            <td><?= 'PJL-'.$r['id_penjualan']; ?></td>
+                            <td><?= htmlspecialchars($r['nama_pelanggan']); ?></td>
+                            <td class="text-end">Rp <?= number_format($r['total_tagihan'],0,',','.'); ?></td>
+                            <td class="text-end">Rp <?= number_format($r['sudah_bayar'],0,',','.'); ?></td>
+                            <td class="text-end fw-bold text-danger">Rp <?= number_format($r['sisa'],0,',','.'); ?></td>
+                        </tr>
+                    <?php endforeach; ?>
+                <?php else: ?>
+                    <tr><td colspan="5" class="text-center text-muted">Tidak ada piutang aktif.</td></tr>
+                <?php endif; ?>
                 </tbody>
             </table>
         </div>
-    </div>
-    
-    <div class="mt-4 d-print-none">
-        <a href="laporan_kartu_piutang.php?id_pelanggan=<?php echo $id_pelanggan; ?>" class="btn btn-info">Refresh Data</a>
-    </div>
 
+    <?php else: ?>
+
+        <h4>Kartu Piutang — Pelanggan: <?= htmlspecialchars($nama_pelanggan); ?></h4>
+        <div class="table-responsive">
+            <table class="table table-bordered table-sm">
+                <thead class="table-dark">
+                <tr>
+                    <th>Tanggal</th>
+                    <th>No. Bukti</th>
+                    <th>Keterangan</th>
+                    <th class="text-end">Debit</th>
+                    <th class="text-end">Kredit</th>
+                    <th class="text-end">Saldo</th>
+                </tr>
+                </thead>
+
+                <tbody>
+                <?php 
+                if (!count($ledger)): 
+                    echo '<tr><td colspan="6" class="text-center text-muted py-3">Tidak ada transaksi.</td></tr>';
+                else:
+                    $running = 0;
+                    foreach ($ledger as $e):
+                        $running += ($e['debit'] - $e['kredit']);
+                ?>
+                    <tr>
+                        <td><?= $e['tanggal']; ?></td>
+                        <td><?= $e['no_bukti']; ?></td>
+                        <td><?= htmlspecialchars($e['keterangan']); ?></td>
+                        <td class="text-end text-primary"><?= $e['debit'] ? number_format($e['debit'],0,',','.') : ''; ?></td>
+                        <td class="text-end text-danger"><?= $e['kredit'] ? number_format($e['kredit'],0,',','.') : ''; ?></td>
+                        <td class="text-end bg-warning fw-bold">
+                            Rp <?= number_format($running,0,',','.'); ?> (D)
+                        </td>
+                    </tr>
+                <?php endforeach; endif; ?>
+                </tbody>
+            </table>
+        </div>
+
+    <?php endif; ?>
 </div>
 
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0/dist/js/select2.min.js"></script>
 <script>
-    document.getElementById('access-info').innerHTML = 'Akses: <?php echo $role_login; ?> (<?php echo $nama_login; ?>, ID <?php echo $id_login; ?>)';
+$(function(){
+    $('.select2').select2({ width:'100%' });
+});
 </script>
 
-<input type="hidden" id="session-role" value="<?php echo $role_login; ?>">
-<input type="hidden" id="session-nama" value="<?php echo $nama_owner; ?>">
-<input type="hidden" id="session-id" value="<?php echo $id_login; ?>">
-
-<?php include '_footer.php'; // Footer Bootstrap ?>
+<?php include '_footer.php'; ?>

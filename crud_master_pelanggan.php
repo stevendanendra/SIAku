@@ -102,8 +102,6 @@ $pelanggan_query = $conn->query("SELECT * FROM ms_pelanggan ORDER BY id_pelangga
                             <td><?php echo htmlspecialchars($row['tgl_daftar']); ?></td>
                             <td>
                                 <div class="d-flex gap-1">
-                                    <a href="laporan_kartu_piutang.php?id_pelanggan=<?php echo $row['id_pelanggan']; ?>" class="btn btn-sm btn-primary text-white" title="Lihat Riwayat Piutang">Piutang</a>
-                                    
                                     <a href="crud_master_pelanggan_edit.php?id=<?php echo $row['id_pelanggan']; ?>" class="btn btn-sm btn-info text-white">Ubah</a>
                                     
                                     <a href="#" 

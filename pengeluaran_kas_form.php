@@ -62,7 +62,7 @@ unset($_SESSION['success_message']);
 <div class="container mt-5">
     
     <p><a href='<?php echo $back_link; ?>' class="btn btn-sm btn-outline-secondary">← Kembali ke Dashboard</a></p>
-    <h1 class="mb-4 display-6 text-danger">2. Pencatatan Pengeluaran Kas</h1>
+    <h1 class="mb-4 display-6 text-danger">Pencatatan Pengeluaran Kas</h1>
     <hr>
     
     <?php if ($error_message) echo "<div class='alert alert-danger'>$error_message</div>"; ?>

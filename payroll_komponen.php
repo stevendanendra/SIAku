@@ -9,9 +9,9 @@ if (!isset($_SESSION['role']) || $_SESSION['role'] !== 'Owner') {
 }
 
 // --- INISIALISASI DATA LOGIN ---
-$nama_owner = htmlspecialchars($_SESSION['nama'] ?? $_SESSION['nama_lengkap'] ?? 'Owner');
-$role_login = htmlspecialchars($_SESSION['role']);
-$id_login = htmlspecialchars($_SESSION['id_pengguna']);
+$role_login = htmlspecialchars($_SESSION['role'] ?? 'N/A');
+$nama_login = htmlspecialchars($_SESSION['nama_lengkap'] ?? $_SESSION['username'] ?? 'User');
+$id_login = htmlspecialchars($_SESSION['id_pengguna'] ?? 'N/A');
 // --------------------------------------------------
 
 $error_message = '';
@@ -37,6 +37,8 @@ function mapPayrollAccount($id_akun, $is_liability) {
         return ['Kategori' => 'Kewajiban', 'SubAkun' => 'Utang (2102)'];
     }
     switch ($id_akun) {
+        case 5100:
+            return ['Kategori' => 'Beban', 'SubAkun' => 'Gaji Total (5100)']; // FIX: Menampilkan akun 5100
         case 5101:
             return ['Kategori' => 'Beban', 'SubAkun' => 'Gaji Pokok (5101)'];
         case 5102:
@@ -66,9 +68,9 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action']) && $_POST['a
     if ($is_liability == 1) {
         $id_akun_beban = 2102; // Kewajiban
     } elseif ($tipe == 'Pengurang') {
-        $id_akun_beban = 5103; // Beban Komponen Minus
+        $id_akun_beban = 5100; // FIX: Semua Beban (Minus) → 5100
     } else { // Tipe Penambah
-        $id_akun_beban = 5102; // Beban Komponen Plus
+        $id_akun_beban = 5100; // FIX: Semua Beban (Plus) → 5100
     }
     // << END: LOGIKA OTOMATISASI AKUN
     
@@ -87,6 +89,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action']) && $_POST['a
 }
 
 // --- LOGIKA TAMPIL DATA (READ) ---
+// Perlu mengambil a.tipe_akun dari ms_akun untuk informasi yang lebih lengkap
 $komponen_query = $conn->query("SELECT k.*, a.nama_akun, a.tipe_akun FROM ms_gaji_komponen k JOIN ms_akun a ON k.id_akun_beban = a.id_akun ORDER BY k.id_komponen ASC");
 ?>
 
@@ -120,8 +123,8 @@ $komponen_query = $conn->query("SELECT k.*, a.nama_akun, a.tipe_akun FROM ms_gaj
                     <div class="mb-3">
                         <label for="tipe" class="form-label">Tipe:</label>
                         <select class="form-select" name="tipe" required>
-                            <option value="Penambah">Penambah (Akun 5102)</option>
-                            <option value="Pengurang">Pengurang (Akun 5103 atau 2102)</option>
+                            <option value="Penambah">Penambah (Akun 5100)</option>
+                            <option value="Pengurang">Pengurang (Akun 5100 atau 2102)</option>
                         </select>
                     </div>
                     
@@ -143,7 +146,7 @@ $komponen_query = $conn->query("SELECT k.*, a.nama_akun, a.tipe_akun FROM ms_gaj
                         <label class="form-check-label" for="is_liability">Apakah ini **Potongan Kewajiban** (Utang/Pajak)?</label>
                         <small class="form-text text-muted d-block">
                             *Jika dicentang: Akun otomatis **2102 (Utang)**.<br>
-                            *Jika tidak dicentang & Tipe Pengurang: Akun otomatis **5103 (Beban Komponen Minus)**.
+                            *Jika tidak dicentang & Tipe Pengurang: Akun otomatis **5100 (Beban Gaji Total)**.
                         </small>
                     </div>
 
@@ -156,10 +159,9 @@ $komponen_query = $conn->query("SELECT k.*, a.nama_akun, a.tipe_akun FROM ms_gaj
             <div class="card shadow-sm p-4 mb-4 bg-light">
                 <h3 class="card-title h5 text-primary">Catatan Penting Payroll (Update Kebijakan)</h3>
                 <ul class="list-group list-group-flush small">
-                    <li class="list-group-item">**Akun 5101 (Beban Gaji Pokok):** HANYA digunakan untuk Gaji Pokok.</li>
-                    <li class="list-group-item">**Akun 5102 (Beban Komponen Plus):** Digunakan untuk Penambah (Tunjangan, Bonus).</li>
-                    <li class="list-group-item">**Akun 5103 (Beban Komponen Minus):** Digunakan untuk Pengurang Non-Utang (Potongan Keterlambatan/Denda).</li>
-                    <li class="list-group-item">**Akun 2102 (Utang PPh 21):** Digunakan HANYA untuk potongan Kewajiban (PPh 21, BPJS Karyawan).</li>
+                    <li class="list-group-item">**Akun 5100 (Beban Gaji Total):** Akun Konsolidasi baru untuk Gaji Pokok, Tunjangan, Bonus, dan Potongan Non-Utang.</li>
+                    <li class="list-group-item">**Akun 4200 (Pendapatan Lain-lain):** Digunakan untuk menampung nilai **Potongan Non-Utang Neto** dan Sisa Bonus (secara akuntansi).</li>
+                    <li class="list-group-item">**Akun 2102 (Utang PPh 21):** Digunakan HANYA untuk potongan Kewajiban (PPh 21, BPJS Karyawan & Perusahaan).</li>
                 </ul>
             </div>
         </div>
@@ -206,10 +208,10 @@ $komponen_query = $conn->query("SELECT k.*, a.nama_akun, a.tipe_akun FROM ms_gaj
         </table>
     </div>
     
-    <script>
-        document.getElementById('access-info').innerHTML = 'Akses: <?php echo $role_login; ?> (<?php echo $nama_login; ?>, ID <?php echo $id_login; ?>)';
-    </script>
-    
+    <input type="hidden" id="session-role" value="<?php echo $role_login; ?>">
+    <input type="hidden" id="session-nama" value="<?php echo $nama_login; ?>">
+    <input type="hidden" id="session-id" value="<?php echo $id_login; ?>">
+
     <div class="modal fade" id="confirmDeleteModal" tabindex="-1" aria-labelledby="confirmDeleteModalLabel" aria-hidden="true">
       <div class="modal-dialog">
         <div class="modal-content">
@@ -249,8 +251,5 @@ $komponen_query = $conn->query("SELECT k.*, a.nama_akun, a.tipe_akun FROM ms_gaj
         });
     </script>
 
-<input type="hidden" id="session-role" value="<?php echo $role_login; ?>">
-<input type="hidden" id="session-nama" value="<?php echo $nama_owner; ?>">
-<input type="hidden" id="session-id" value="<?php echo $id_login; ?>">
 
 <?php include '_footer.php'; // Footer Bootstrap ?>
