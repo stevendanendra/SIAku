@@ -45,7 +45,7 @@ if (!$piutang_query) {
 <div class="container mt-5">
     
     <p><a href='dashboard_karyawan.php' class="btn btn-sm btn-outline-secondary">← Kembali ke Dashboard Kasir</a></p>
-    <h1 class="mb-4 display-6 text-info">3. Daftar Piutang Usaha Belum Lunas</h1>
+    <h1 class="mb-3 text-info">Daftar Piutang Usaha Belum Lunas</h1>
     <hr>
     
     <div class="table-responsive">

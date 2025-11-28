@@ -41,7 +41,7 @@ $AKUN_PIUTANG = 1102;
 <div class="container mt-5">
 
     <p><a href='dashboard_karyawan.php' class="btn btn-sm btn-outline-secondary">← Kembali ke Dashboard Kasir</a></p>
-    <h1 class="mb-4 display-6 text-success">1. Penerimaan Kas (POS)</h1> <hr>
+    <h1 class="mb-3 text-success">Penerimaan Kas (POS)</h1> <hr>
 
     <?php if ($error_message) echo "<div class='alert alert-danger'>$error_message</div>"; ?>
     <?php if ($success_message) echo "<div class='alert alert-success'>$success_message</div>"; ?>

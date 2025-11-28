@@ -79,7 +79,7 @@ if (!$jurnal_query) {
 
 <div class="container mt-5" style="padding-top: 20px;">
     
-    <h1 class="mb-4">4. Laporan Jurnal Umum (Semua Transaksi)</h1>
+    <h1 class="mb-4">Laporan Jurnal Umum (Semua Transaksi)</h1>
     
     <p class="text-muted"><a href="dashboard_owner.php" class="btn btn-sm btn-outline-secondary">← Kembali ke Dashboard Owner</a></p>
     <hr>

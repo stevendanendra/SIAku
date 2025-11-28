@@ -53,7 +53,7 @@ $laba_bersih_status = $laba_bersih >= 0 ? 'Laba Bersih' : 'Rugi Bersih';
 
 <div class="container mt-5">
 
-    <h1 class="mb-4 d-print-none">6. Laporan Laba Rugi Perusahaan</h1>
+    <h1 class="mb-4 d-print-none">Laporan Laba Rugi Perusahaan</h1>
     <p class="d-print-none"><a href="dashboard_owner.php" class="btn btn-sm btn-outline-secondary">← Kembali ke Dashboard Owner</a></p>
     <hr class="d-print-none">
 

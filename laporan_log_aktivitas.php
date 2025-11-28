@@ -59,7 +59,7 @@ include '_header.php';
 
 <div class="container mt-5">
 
-    <h1 class="mb-4 display-6 text-dark">Laporan Jejak Audit (Log Aktivitas)</h1>
+    <h1 class="mb-3">Laporan Jejak Audit (Log Aktivitas)</h1>
     <p><a href="dashboard_owner.php" class="btn btn-sm btn-outline-secondary">← Kembali ke Dashboard Owner</a></p>
     <hr>
 

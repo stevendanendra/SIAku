@@ -115,7 +115,7 @@ if (!empty($filter_akun_id)) {
 
 <div class="container mt-5">
     
-    <h1>5. Modul Buku Besar & Update Saldo</h1>
+    <h1>Modul Buku Besar & Update Saldo</h1>
     
     <p><a href="dashboard_owner.php" class="btn btn-sm btn-outline-secondary">← Kembali ke Dashboard Owner</a></p>
     <hr>

@@ -170,7 +170,7 @@ include '_header.php';
 
     <?php if (empty($id_supplier)): ?>
         <!-- DEFAULT: daftar hutang belum lunas semua supplier (urut jatuh tempo terdekat) -->
-        <h4>Daftar Hutang Belum Lunas (urut: jatuh tempo terdekat)</h4>
+        <h4>Daftar Hutang Belum Lunas</h4>
         <div class="table-responsive">
             <table class="table table-bordered table-sm">
                 <thead class="table-dark">

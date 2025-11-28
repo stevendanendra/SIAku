@@ -51,7 +51,7 @@ $utang_query = $conn->query($sql_utang);
         ← Kembali ke Dashboard Kasir
     </a></p>
 
-    <h1 class="mb-3 display-6 text-warning">4. Daftar Hutang Usaha Belum Lunas</h1>
+    <h1 class="mb-3 text-warning">Daftar Hutang Usaha Belum Lunas</h1>
     <hr>
 
     <!-- NOTIFIKASI -->

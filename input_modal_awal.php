@@ -20,7 +20,7 @@ $id_login = htmlspecialchars($_SESSION['id_pengguna']);
 
 <div class="container mt-5">
     
-    <h1 class="mb-4 text-primary">💰 Input Setoran Modal (Setoran Berulang)</h1>
+    <h1 class="mb-4 text-primary">Input Setoran Modal</h1>
     <p><a href='dashboard_owner.php' class="btn btn-sm btn-outline-secondary">← Kembali ke Dashboard Owner</a></p>
     <hr>
     

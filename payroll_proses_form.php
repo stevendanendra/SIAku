@@ -307,7 +307,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action']) && $_POST['a
 <?php include '_header.php'; // Header Bootstrap ?>
 
 <div class="container mt-5">
-    <h1 class="mb-4">3. Pemrosesan Gaji Bulanan (Payroll)</h1>
+    <h1 class="mb-4">Pemrosesan Gaji Bulanan (Payroll)</h1>
     
     <p class="text-muted"><a href="dashboard_owner.php" class="btn btn-sm btn-outline-secondary">← Kembali ke Dashboard Owner</a></p>
     <hr>
