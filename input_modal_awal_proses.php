@@ -63,8 +63,9 @@ try {
     // LOG AKTIVITAS (WAJIB untuk transaksi modal)
     // -------------------------------------------
     $aksi = $conn->real_escape_string("Input Modal Tambahan sebesar Rp " . number_format($jumlah_modal));
-    $sql_log = "INSERT INTO log_aktivitas (id_pengguna, aktivitas, waktu) 
-                VALUES ('$id_pengguna', '$aksi', NOW())";
+    $sql_log = "INSERT INTO tr_log_aktivitas (tgl_waktu, id_pengguna, username, deskripsi, modul, ip_address) 
+    VALUES 
+    (NOW(), '$id_pengguna', '$username', '$deskripsi', 'Modul', '$ip_address')";
 
     if (!$conn->query($sql_log)) {
         throw new Exception("Gagal mencatat log aktivitas: " . $conn->error);
